@@ -1,5 +1,5 @@
 {
-	"name": "n8n-nodes-x",
+	"name": "@atorber/n8n-nodes-x",
 	"version": "0.1.0",
 	"description": "X node for n8n",
 	"license": "MIT",
