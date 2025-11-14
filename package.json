@@ -1,6 +1,6 @@
 {
 	"name": "@atorber/n8n-nodes-x",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "X node for n8n",
 	"license": "MIT",
 	"homepage": "",
