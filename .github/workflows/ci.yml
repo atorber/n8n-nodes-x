@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -29,7 +31,9 @@ jobs:
         run: 'npm run build'
 
       - name: Publish to npm
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: 'npm publish --access public'
+        if: |
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          startsWith(github.ref, 'refs/tags/v')
+        run: 'npm publish --access public --ignore-scripts'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
