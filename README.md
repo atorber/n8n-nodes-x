@@ -1,247 +1,137 @@
-![Banner image](https://user-images.githubusercontent.com/10284570/173569848-c624317f-42b1-45a6-ab09-f0ea3c247648.png)
+# n8n-nodes-x
 
-# n8n-nodes-starter
+这是一个 n8n 社区节点包，提供了多个实用的节点集成，包括 GitHub Issues 和 iCafe 操作。
 
-This starter repository helps you build custom integrations for [n8n](https://n8n.io). It includes example nodes, credentials, the node linter, and all the tooling you need to get started.
+[n8n](https://n8n.io/) 是一个 [fair-code 许可](https://docs.n8n.io/reference/license/) 的工作流自动化平台。
 
-## Quick Start
+[安装](#安装)  
+[节点说明](#节点说明)  
+[凭证配置](#凭证配置)  
+[兼容性](#兼容性)  
+[开发](#开发)  
+[资源](#资源)
 
-> [!TIP]
-> **New to building n8n nodes?** The fastest way to get started is with `npm create @n8n/node`. This command scaffolds a complete node package for you using the [@n8n/node-cli](https://www.npmjs.com/package/@n8n/node-cli).
+## 安装
 
-**To create a new node package from scratch:**
+按照 [n8n 社区节点文档](https://docs.n8n.io/integrations/community-nodes/installation/) 中的安装指南进行安装。
 
-```bash
-npm create @n8n/node
-```
+## 节点说明
 
-**Already using this starter? Start developing with:**
+本包包含以下节点：
 
-```bash
-npm run dev
-```
+### 1. GitHub Issues 节点
 
-This starts n8n with your nodes loaded and hot reload enabled.
+GitHub Issues 节点提供了完整的 GitHub Issues 集成功能，使用声明式风格构建：
 
-## What's Included
+- **低代码方式** - 无需编写请求逻辑，通过声明式定义操作
+- 多个资源（Issues、Comments）
+- 多个操作（Get、Get All、Create）
+- 两种认证方式（OAuth2 和个人访问令牌）
+- 列表搜索功能，支持动态下拉选择
+- 完善的错误处理和类型定义
 
-This starter repository includes two example nodes to learn from:
+**支持的操作：**
 
-- **[Example Node](nodes/Example/)** - A simple starter node that shows the basic structure with a custom `execute` method
-- **[GitHub Issues Node](nodes/GithubIssues/)** - A complete, production-ready example built using the **declarative style**:
-  - **Low-code approach** - Define operations declaratively without writing request logic
-  - Multiple resources (Issues, Comments)
-  - Multiple operations (Get, Get All, Create)
-  - Two authentication methods (OAuth2 and Personal Access Token)
-  - List search functionality for dynamic dropdowns
-  - Proper error handling and typing
-  - Ideal for HTTP API-based integrations
+- 获取 Issue
+- 获取所有 Issues
+- 创建 Issue
+- 获取 Issue 评论
 
-> [!TIP]
-> The declarative/low-code style (used in GitHub Issues) is the recommended approach for building nodes that interact with HTTP APIs. It significantly reduces boilerplate code and handles requests automatically.
+### 2. iCafe 节点
 
-Browse these examples to understand both approaches, then modify them or create your own.
+iCafe 节点用于与百度 iCafe 系统集成，支持查询卡片和评论卡片等操作。
 
-## Finding Inspiration
+**支持的操作：**
 
-Looking for more examples? Check out these resources:
+- **查询卡片** - 根据 IQL 查询条件获取卡片列表
+- **查询卡片详情** - 根据卡片 ID 获取卡片详情
+- **评论卡片** - 对指定卡片添加评论
+- **解析卡片详情** - 卡片详情 HTML 转义字符解析
 
-- **[npm Community Nodes](https://www.npmjs.com/search?q=keywords:n8n-community-node-package)** - Browse thousands of community-built nodes on npm using the `n8n-community-node-package` tag
-- **[n8n Built-in Nodes](https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/nodes)** - Study the source code of n8n's official nodes for production-ready patterns and best practices
-- **[n8n Credentials](https://github.com/n8n-io/n8n/tree/master/packages/nodes-base/credentials)** - See how authentication is implemented for various services
+### 3. Example 节点
 
-These are excellent resources to understand how to structure your nodes, handle different API patterns, and implement advanced features.
+示例节点，展示了基本的节点结构和自定义 `execute` 方法的实现方式。
 
-## Prerequisites
+## 凭证配置
 
-Before you begin, install the following on your development machine:
+### GitHub Issues 凭证
 
-### Required
+支持两种认证方式：
 
-- **[Node.js](https://nodejs.org/)** (v22 or higher) and npm
-  - Linux/Mac/WSL: Install via [nvm](https://github.com/nvm-sh/nvm)
-  - Windows: Follow [Microsoft's NodeJS guide](https://learn.microsoft.com/en-us/windows/dev-environment/javascript/nodejs-on-windows)
-- **[git](https://git-scm.com/downloads)**
+1. **OAuth2 认证** (`GithubIssuesOAuth2Api`)
+   - 需要配置 OAuth2 客户端 ID 和客户端密钥
+   - 适用于需要用户授权的场景
 
-### Recommended
+2. **个人访问令牌** (`GithubIssuesApi`)
+   - 需要配置 GitHub 个人访问令牌
+   - 适用于自动化场景
 
-- Follow n8n's [development environment setup guide](https://docs.n8n.io/integrations/creating-nodes/build/node-development-environment/)
+### iCafe 凭证
 
-> [!NOTE]
-> The `@n8n/node-cli` is included as a dev dependency and will be installed automatically when you run `npm install`. The CLI includes n8n for local development, so you don't need to install n8n globally.
+`ICafeApi` 凭证需要配置以下信息：
 
-## Getting Started with this Starter
+- **baseURL** - iCafe API 基础 URL（默认：`http://icafeapi.baidu-int.com`）
+- **space** - 空间标识（必填）
+- **username** - 用户名（评论操作时必填）
+- **password** - 密码（评论操作时必填）
 
-Follow these steps to create your own n8n community node package:
+## 兼容性
 
-### 1. Create Your Repository
+- **n8n 版本**: 建议使用最新版本的 n8n
+- **Node.js 版本**: v22 或更高版本
 
-[Generate a new repository](https://github.com/n8n-io/n8n-nodes-starter/generate) from this template, then clone it:
+## 开发
 
-```bash
-git clone https://github.com/<your-organization>/<your-repo-name>.git
-cd <your-repo-name>
-```
+### 本地开发
 
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-This installs all required dependencies including the `@n8n/node-cli`.
-
-### 3. Explore the Examples
-
-Browse the example nodes in [nodes/](nodes/) and [credentials/](credentials/) to understand the structure:
-
-- Start with [nodes/Example/](nodes/Example/) for a basic node
-- Study [nodes/GithubIssues/](nodes/GithubIssues/) for a real-world implementation
-
-### 4. Build Your Node
-
-Edit the example nodes to fit your use case, or create new node files by copying the structure from [nodes/Example/](nodes/Example/).
-
-> [!TIP]
-> If you want to scaffold a completely new node package, use `npm create @n8n/node` to start fresh with the CLI's interactive generator.
-
-### 5. Configure Your Package
-
-Update `package.json` with your details:
-
-- `name` - Your package name (must start with `n8n-nodes-`)
-- `author` - Your name and email
-- `repository` - Your repository URL
-- `description` - What your node does
-
-Make sure your node is registered in the `n8n.nodes` array.
-
-### 6. Develop and Test Locally
-
-Start n8n with your node loaded:
+启动开发环境：
 
 ```bash
 npm run dev
 ```
 
-This command runs `n8n-node dev` which:
+这将启动 n8n 并加载你的节点，支持热重载。
 
-- Builds your node with watch mode
-- Starts n8n with your node available
-- Automatically rebuilds when you make changes
-- Opens n8n in your browser (usually http://localhost:5678)
+### 构建
 
-You can now test your node in n8n workflows!
-
-> [!NOTE]
-> Learn more about CLI commands in the [@n8n/node-cli documentation](https://www.npmjs.com/package/@n8n/node-cli).
-
-### 7. Lint Your Code
-
-Check for errors:
-
-```bash
-npm run lint
-```
-
-Auto-fix issues when possible:
-
-```bash
-npm run lint:fix
-```
-
-### 8. Build for Production
-
-When ready to publish:
+构建生产版本：
 
 ```bash
 npm run build
 ```
 
-This compiles your TypeScript code to the `dist/` folder.
+### 代码检查
 
-### 9. Prepare for Publishing
-
-Before publishing:
-
-1. **Update documentation**: Replace this README with your node's documentation. Use [README_TEMPLATE.md](README_TEMPLATE.md) as a starting point.
-2. **Update the LICENSE**: Add your details to the [LICENSE](LICENSE.md) file.
-3. **Test thoroughly**: Ensure your node works in different scenarios.
-
-### 10. Publish to npm
-
-Publish your package to make it available to the n8n community:
+检查代码错误：
 
 ```bash
-npm publish
+npm run lint
 ```
 
-Learn more about [publishing to npm](https://docs.npmjs.com/packages-and-modules/contributing-packages-to-the-registry).
+自动修复问题：
 
-### 11. Submit for Verification (Optional)
+```bash
+npm run lint:fix
+```
 
-Get your node verified for n8n Cloud:
+### 可用脚本
 
-1. Ensure your node meets the [requirements](https://docs.n8n.io/integrations/creating-nodes/deploy/submit-community-nodes/):
-   - Uses MIT license ✅ (included in this starter)
-   - No external package dependencies
-   - Follows n8n's design guidelines
-   - Passes quality and security review
+| 脚本                | 描述                                    |
+| ------------------- | --------------------------------------- |
+| `npm run dev`         | 启动 n8n 并监听文件变化                 |
+| `npm run build`       | 编译 TypeScript 到 JavaScript           |
+| `npm run build:watch` | 监听模式构建（自动重建）                |
+| `npm run lint`        | 检查代码错误和风格问题                  |
+| `npm run lint:fix`    | 自动修复可修复的代码问题                |
+| `npm run release`     | 创建新版本发布                           |
 
-2. Submit through the [n8n Creator Portal](https://creators.n8n.io/nodes)
+## 资源
 
-**Benefits of verification:**
+- [n8n 节点文档](https://docs.n8n.io/integrations/creating-nodes/) - 构建节点的完整指南
+- [n8n 社区论坛](https://community.n8n.io/) - 获取帮助和分享你的节点
+- [@n8n/node-cli 文档](https://www.npmjs.com/package/@n8n/node-cli) - CLI 工具参考
+- [n8n 社区节点文档](https://docs.n8n.io/integrations/#community-nodes) - 社区节点使用指南
 
-- Available directly in n8n Cloud
-- Discoverable in the n8n nodes panel
-- Verified badge for quality assurance
-- Increased visibility in the n8n community
+## 许可证
 
-## Available Scripts
-
-This starter includes several npm scripts to streamline development:
-
-| Script                | Description                                                      |
-| --------------------- | ---------------------------------------------------------------- |
-| `npm run dev`         | Start n8n with your node and watch for changes (runs `n8n-node dev`) |
-| `npm run build`       | Compile TypeScript to JavaScript for production (runs `n8n-node build`) |
-| `npm run build:watch` | Build in watch mode (auto-rebuild on changes)                    |
-| `npm run lint`        | Check your code for errors and style issues (runs `n8n-node lint`) |
-| `npm run lint:fix`    | Automatically fix linting issues when possible (runs `n8n-node lint --fix`) |
-| `npm run release`     | Create a new release (runs `n8n-node release`)                   |
-
-> [!TIP]
-> These scripts use the [@n8n/node-cli](https://www.npmjs.com/package/@n8n/node-cli) under the hood. You can also run CLI commands directly, e.g., `npx n8n-node dev`.
-
-## Troubleshooting
-
-### My node doesn't appear in n8n
-
-1. Make sure you ran `npm install` to install dependencies
-2. Check that your node is listed in `package.json` under `n8n.nodes`
-3. Restart the dev server with `npm run dev`
-4. Check the console for any error messages
-
-### Linting errors
-
-Run `npm run lint:fix` to automatically fix most common issues. For remaining errors, check the [n8n node development guidelines](https://docs.n8n.io/integrations/creating-nodes/).
-
-### TypeScript errors
-
-Make sure you're using Node.js v22 or higher and have run `npm install` to get all type definitions.
-
-## Resources
-
-- **[n8n Node Documentation](https://docs.n8n.io/integrations/creating-nodes/)** - Complete guide to building nodes
-- **[n8n Community Forum](https://community.n8n.io/)** - Get help and share your nodes
-- **[@n8n/node-cli Documentation](https://www.npmjs.com/package/@n8n/node-cli)** - CLI tool reference
-- **[n8n Creator Portal](https://creators.n8n.io/nodes)** - Submit your node for verification
-- **[Submit Community Nodes Guide](https://docs.n8n.io/integrations/creating-nodes/deploy/submit-community-nodes/)** - Verification requirements and process
-
-## Contributing
-
-Have suggestions for improving this starter? [Open an issue](https://github.com/n8n-io/n8n-nodes-starter/issues) or submit a pull request!
-
-## License
-
-[MIT](https://github.com/n8n-io/n8n-nodes-starter/blob/master/LICENSE.md)
+[MIT](LICENSE.md)
