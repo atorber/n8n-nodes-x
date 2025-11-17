@@ -42,13 +42,13 @@ export class AihcApi implements ICredentialType {
 			description: 'API 基础URL，默认为百度百舸平台地址',
 		},
 		{
-			displayName: '默认资源池 ID',
+			displayName: '默认资源池ID',
 			name: 'defaultResourcePoolId',
 			type: 'string',
 			default: '',
 			required: false,
-            placeholder: '输入资源池 ID',
-			description: '默认资源池 ID，在需要使用资源池时如果节点参数未填写则使用此值',
+            placeholder: '输入资源池ID',
+			description: '默认资源池ID，在需要使用资源池时如果节点参数未填写则使用此值',
 		},
 		{
 			displayName: '默认队列',
@@ -58,6 +58,15 @@ export class AihcApi implements ICredentialType {
 			required: false,
             placeholder: '输入队列名称或ID',
 			description: '默认队列名称或ID，在需要使用队列时如果节点参数未填写则使用此值',
+		},
+		{
+			displayName: 'PFS 实例 ID',
+			name: 'defaultPfsInstanceId',
+			type: 'string',
+			default: '',
+			required: false,
+			placeholder: '输入 PFS 实例 ID',
+			description: '默认 PFS 实例 ID，在创建任务时如果需要使用数据源且未指定 PFS 实例ID，则使用此值',
 		},
 	];
 

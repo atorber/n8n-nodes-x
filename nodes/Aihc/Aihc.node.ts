@@ -258,6 +258,18 @@ export class Aihc implements INodeType {
 						action: '查询训练任务列表',
 						description: '查询指定资源池的训练任务列表',
 					},
+					{
+						name: '查询详情',
+						value: 'describeJob',
+						action: '查询训练任务详情',
+						description: '获取一个训练任务的详细信息',
+					},
+					{
+						name: '创建任务',
+						value: 'createJob',
+						action: '创建训练任务',
+						description: '创建一个训练任务到集群中运行',
+					},
 				],
 				default: 'describeJobs',
 			},
@@ -360,7 +372,7 @@ export class Aihc implements INodeType {
 				default: 'callApi',
 			},
 			{
-				displayName: '资源池 ID',
+				displayName: '资源池ID',
 				name: 'resourcePoolId',
 				type: 'string',
 				typeOptions: {
@@ -373,10 +385,124 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['job'],
-						operation: ['describeJobs'],
+						operation: ['describeJobs', 'createJob'],
 					},
 				},
-				description: '输入资源池 ID，或点击输入框右侧的搜索图标从资源池列表中选择。如果未填写，将使用凭证中设置的默认资源池ID',
+				description: '输入资源池ID，或点击输入框右侧的搜索图标从资源池列表中选择。如果未填写，将使用凭证中设置的默认资源池ID',
+			},
+			{
+				displayName: '队列 ID',
+				name: 'queueID',
+				type: 'string',
+				default: '',
+				placeholder: '留空则使用凭证中的默认队列',
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['createJob'],
+					},
+				},
+				description: '训练任务所属队列ID，自运维资源池须填入队列名称，托管资源池须填入队列ID。如果未填写，将使用凭证中设置的默认队列',
+			},
+			{
+				displayName: '队列名称',
+				name: 'queueName',
+				type: 'string',
+				default: '',
+				placeholder: '留空则使用凭证中的默认队列',
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['createJob'],
+					},
+				},
+				description: '训练任务所属队列名称，保持和队列ID一致即可。如果未填写，将使用凭证中设置的默认队列',
+			},
+			{
+				displayName: '请求体参数',
+				name: 'requestBody',
+				type: 'json',
+				default: JSON.stringify(
+					{
+						name: 'api-0513-2',
+						queue: 'default',
+						jobType: 'PyTorchJob',
+						command: 'sleep 1d',
+						jobSpec: {
+							replicas: 1,
+							image: 'registry.baidubce.com/aihc-aiak/aiak-megatron:ubuntu20.04-cu11.8-torch1.14.0-py38_v1.2.7.12_release',
+							resources: [],
+							envs: [
+								{
+									name: 'NCCL_DEBUG',
+									value: 'DEBUG',
+								},
+								{
+									name: 'NCCL_IB_DISABLE',
+									value: '0',
+								},
+							],
+							enableRDMA: true,
+						},
+						labels: [],
+						datasource: [
+							{
+								type: 'pfs',
+								name: 'pfs-pxE6jz',
+								mountPath: '/mnt/cluster',
+							},
+						],
+					},
+					null,
+					2,
+				),
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['createJob'],
+					},
+				},
+				description: '训练任务的请求体参数（JSON格式）。如果设置了资源池ID、队列ID、队列名称，将自动替换请求体中的对应值',
+			},
+			{
+				displayName: '任务 ID',
+				name: 'jobId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['describeJob'],
+					},
+				},
+				description: '训练任务ID',
+			},
+			{
+				displayName: '队列 ID',
+				name: 'queueID',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['describeJob'],
+					},
+				},
+				description: '训练任务所属队列ID，通用资源池须填入队列名称，托管资源池须填入队列ID',
+			},
+			{
+				displayName: '是否需要详细信息',
+				name: 'needDetail',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						resource: ['job'],
+						operation: ['describeJob'],
+					},
+				},
+				description: 'Whether to return detailed information, including Pod and historical Pod lists when set to true',
 			},
 			{
 				displayName: 'API 路径',
@@ -550,7 +676,7 @@ export class Aihc implements INodeType {
 				description: 'Whether to show only the current user\'s development instances',
 			},
 			{
-				displayName: '资源池 ID（开发实例）',
+				displayName: '资源池ID（开发实例）',
 				name: 'devResourcePoolId',
 				type: 'string',
 				default: '',
@@ -560,10 +686,10 @@ export class Aihc implements INodeType {
 						resource: ['devInstance'],
 					},
 				},
-				description: '资源池 ID 过滤。如果未填写，将使用凭证中设置的默认资源池ID',
+				description: '资源池ID 过滤。如果未填写，将使用凭证中设置的默认资源池ID',
 			},
 			{
-				displayName: '队列名称（开发实例）',
+				displayName: '队列名称',
 				name: 'devQueueName',
 				type: 'string',
 				default: '',
@@ -576,7 +702,7 @@ export class Aihc implements INodeType {
 				description: '队列名称过滤。如果未填写，将使用凭证中设置的默认队列',
 			},
 			{
-				displayName: '状态（开发实例）',
+				displayName: '状态',
 				name: 'devStatus',
 				type: 'string',
 				default: '',
@@ -589,7 +715,7 @@ export class Aihc implements INodeType {
 			},
 			// 队列查询参数
 			{
-				displayName: '资源池 ID（队列）',
+				displayName: '资源池ID',
 				name: 'queueResourcePoolId',
 				type: 'string',
 				default: '',
@@ -599,10 +725,10 @@ export class Aihc implements INodeType {
 						resource: ['queue'],
 					},
 				},
-				description: '资源池 ID。如果未填写，将使用凭证中设置的默认资源池ID',
+				description: '资源池ID。如果未填写，将使用凭证中设置的默认资源池ID',
 			},
 			{
-				displayName: '关键词类型（队列）',
+				displayName: '关键词类型',
 				name: 'queueKeywordType',
 				type: 'options',
 				options: [
@@ -618,7 +744,7 @@ export class Aihc implements INodeType {
 				description: '关键词搜索类型',
 			},
 			{
-				displayName: '关键词（队列）',
+				displayName: '关键词',
 				name: 'queueKeyword',
 				type: 'string',
 				default: '',
@@ -631,7 +757,7 @@ export class Aihc implements INodeType {
 			},
 			// 服务查询参数
 			{
-				displayName: '排序字段（服务）',
+				displayName: '排序字段',
 				name: 'serviceOrderBy',
 				type: 'string',
 				default: 'createdAt',
@@ -640,10 +766,9 @@ export class Aihc implements INodeType {
 						resource: ['service'],
 					},
 				},
-				description: '排序字段',
 			},
 			{
-				displayName: '排序方向（服务）',
+				displayName: '排序方向',
 				name: 'serviceOrder',
 				type: 'options',
 				options: [
@@ -656,7 +781,6 @@ export class Aihc implements INodeType {
 						resource: ['service'],
 					},
 				},
-				description: '排序方向',
 			},
 		],
 	};
@@ -676,16 +800,17 @@ export class Aihc implements INodeType {
 				const baseURL = (credentials?.baseURL as string) || 'http://aihc.bj.baidubce.com';
 				const defaultResourcePoolId = (credentials?.defaultResourcePoolId as string) || '';
 				const defaultQueue = (credentials?.defaultQueue as string) || '';
+				const defaultPfsInstanceId = (credentials?.defaultPfsInstanceId as string) || '';
 
 				if (!accessKey || !secretKey) {
-					throw new NodeOperationError(
-						this.getNode(),
+						throw new NodeOperationError(
+							this.getNode(),
 						'凭证中缺少 Access Key 或 Secret Key',
-						{
-							itemIndex,
-						},
-					);
-				}
+							{
+								itemIndex,
+							},
+						);
+					}
 
 				// 使用 BceBaseClient 发送请求
 				const bceConfig = {
@@ -721,7 +846,7 @@ export class Aihc implements INodeType {
 					}
 
 					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池 ID 不能为空', {
+						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
 							itemIndex,
 						});
 					}
@@ -735,6 +860,120 @@ export class Aihc implements INodeType {
 					// body 参数（pageNumber, pageSize 等应该在 body 中，但当前实现中这些参数还没有添加）
 					// 暂时使用空 body，后续可以添加更多参数
 					requestBody = JSON.stringify({});
+					httpMethod = 'POST';
+				} else if (operation === 'createJob') {
+					// 创建训练任务操作
+					let resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
+					let queueID = this.getNodeParameter('queueID', itemIndex, '') as string;
+					let queueName = this.getNodeParameter('queueName', itemIndex, '') as string;
+					const requestBodyStr = this.getNodeParameter('requestBody', itemIndex, '{}') as string;
+
+					// 如果节点参数未填写，使用凭证中的默认值
+					if (!resourcePoolId && defaultResourcePoolId) {
+						resourcePoolId = defaultResourcePoolId;
+					}
+
+					if (!resourcePoolId) {
+						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					// 解析请求体
+					let bodyData: IDataObject = {};
+					try {
+						bodyData = JSON.parse(requestBodyStr) as IDataObject;
+					} catch {
+						throw new NodeOperationError(this.getNode(), '请求体参数格式错误，必须是有效的JSON格式', {
+							itemIndex,
+						});
+					}
+
+					// 如果队列ID和队列名称都未填写，使用凭证中的默认队列
+					if (!queueID && !queueName && defaultQueue) {
+						queueID = defaultQueue;
+						queueName = defaultQueue;
+					}
+
+					// 如果设置了资源池ID、队列ID、队列名称，替换请求体中的对应值
+					// resourcePoolId 和 queueID 在 query 参数中，不在 body 中
+					// queue 在 body 中，必须和 queueID 保持一致
+					const finalQueueID = queueID || queueName || (bodyData.queueID as string) || (bodyData.queue as string) || '';
+					const finalQueueName = queueName || queueID || (bodyData.queue as string) || finalQueueID;
+
+					if (!finalQueueID) {
+						throw new NodeOperationError(this.getNode(), '队列ID 不能为空，请在"队列ID"字段或请求体参数中设置', {
+								itemIndex,
+							});
+						}
+
+					// 更新 body 中的 queue 字段，确保和 queueID 一致
+					bodyData.queue = finalQueueName;
+					// 移除 body 中的 queueID（如果存在），因为 queueID 只在 query 参数中
+					delete bodyData.queueID;
+
+					// 如果请求体中有 datasource 数组，且未指定 PFS 实例ID，则使用凭证中的默认值
+					if (defaultPfsInstanceId && Array.isArray(bodyData.datasource)) {
+						bodyData.datasource = (bodyData.datasource as IDataObject[]).map((ds: IDataObject) => {
+							// 如果是 PFS 类型的数据源，且没有指定 name，则使用默认的 PFS 实例ID
+							if (ds.type === 'pfs' && !ds.name) {
+								return {
+									...ds,
+									name: defaultPfsInstanceId,
+								};
+							}
+							return ds;
+						});
+					}
+
+					action = 'CreateJob';
+					queryParams = {
+						action,
+						resourcePoolId,
+						queueID: finalQueueID,
+					};
+					requestBody = JSON.stringify(bodyData);
+					httpMethod = 'POST';
+				} else if (operation === 'describeJob') {
+					// 查询训练任务详情操作
+					let resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
+					const queueID = this.getNodeParameter('queueID', itemIndex, '') as string;
+					const jobId = this.getNodeParameter('jobId', itemIndex, '') as string;
+					const needDetail = this.getNodeParameter('needDetail', itemIndex, false) as boolean;
+
+					// 如果节点参数未填写，使用凭证中的默认值
+					if (!resourcePoolId && defaultResourcePoolId) {
+						resourcePoolId = defaultResourcePoolId;
+					}
+
+					if (!resourcePoolId) {
+						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					if (!jobId) {
+						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					if (!queueID) {
+						throw new NodeOperationError(this.getNode(), '队列ID 不能为空', {
+								itemIndex,
+							});
+						}
+
+					action = 'DescribeJob';
+					queryParams = {
+						action,
+						resourcePoolId,
+						queueID,
+					};
+					requestBody = JSON.stringify({
+						jobId,
+						needDetail,
+					});
 					httpMethod = 'POST';
 				} else if (operation === 'describeDatasets') {
 					// 查询数据集列表操作
@@ -834,10 +1073,10 @@ export class Aihc implements INodeType {
 					}
 
 					if (!queueResourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池 ID 不能为空', {
-							itemIndex,
-						});
-					}
+						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
+								itemIndex,
+							});
+						}
 
 					queryParams = {
 						action,
@@ -860,9 +1099,9 @@ export class Aihc implements INodeType {
 
 					if (!apiPath) {
 						throw new NodeOperationError(this.getNode(), 'API 路径不能为空', {
-							itemIndex,
-						});
-					}
+								itemIndex,
+							});
+						}
 
 					// 如果用户输入了完整 URL（包含域名），提取路径部分
 					// 域名应该从凭证中的 baseURL 获取
@@ -915,11 +1154,11 @@ export class Aihc implements INodeType {
 					if (requestBodyStr && (httpMethod === 'POST' || httpMethod === 'PUT')) {
 						requestBody = requestBodyStr;
 					}
-				} else {
-					throw new NodeOperationError(this.getNode(), `未知操作: ${operation}`, {
-						itemIndex,
-					});
-				}
+					} else {
+						throw new NodeOperationError(this.getNode(), `未知操作: ${operation}`, {
+							itemIndex,
+						});
+					}
 
 				// 构建请求头（根据参考脚本）
 				const headers: Record<string, string> = {
