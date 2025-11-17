@@ -45,6 +45,9 @@
 			"dist/nodes/ZhiBan/ZhiBan.node.js"
 		]
 	},
+	"dependencies": {
+		"@atorber/baiducloud-sdk": "^1.0.3-beta.7"
+	},
 	"devDependencies": {
 		"@n8n/node-cli": "*",
 		"eslint": "9.32.0",

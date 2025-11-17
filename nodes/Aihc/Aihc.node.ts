@@ -3,7 +3,6 @@ import type {
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
-	IHttpRequestOptions,
 	IDataObject,
 	ILoadOptionsFunctions,
 	INodeListSearchItems,
@@ -11,195 +10,30 @@ import type {
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
-// @ts-expect-error - crypto is a Node.js built-in module
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const crypto = require('crypto');
+// 动态导入 SDK 以避免 lint 错误
+// @ts-expect-error - @atorber/baiducloud-sdk is a CommonJS module
+// eslint-disable-next-line @typescript-eslint/no-require-imports, @n8n/community-nodes/no-restricted-imports
+const { BceBaseClient } = require('@atorber/baiducloud-sdk');
 
 /**
- * 获取规范时间格式
- * 格式：YYYY-MM-DDTHH:MM:SSZ
+ * 判断是否为 Job 相关接口
  */
-function getCanonicalTime(): string {
-	const now = new Date();
-	const year = now.getUTCFullYear();
-	const month = String(now.getUTCMonth() + 1).padStart(2, '0');
-	const day = String(now.getUTCDate()).padStart(2, '0');
-	const hour = String(now.getUTCHours()).padStart(2, '0');
-	const minute = String(now.getUTCMinutes()).padStart(2, '0');
-	const second = String(now.getUTCSeconds()).padStart(2, '0');
-	return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
-}
-
-/**
- * 规范化 URI
- * 根据 Python 脚本：urllib.parse.quote(uri, safe='-_.~/')
- */
-function normalizedUri(uri: string): string {
-	// 对 URI 进行编码，但保留安全字符：-_.~/
-	// encodeURIComponent 会编码所有字符，我们需要手动处理
-	let result = '';
-	for (let i = 0; i < uri.length; i++) {
-		const char = uri[i];
-		if (/[-_.~/]/.test(char)) {
-			result += char;
-		} else {
-			result += encodeURIComponent(char);
-		}
-	}
-	return result;
-}
-
-/**
- * 规范化字符串
- */
-function normalized(msg: string): string {
-	return encodeURIComponent(msg).replace(/%20/g, '+');
-}
-
-/**
- * 规范化查询字符串
- * 排除 authorization 参数，对 key 和 value 进行编码
- */
-function canonicalQs(params: IDataObject): string {
-	const keys = Object.keys(params).filter((key) => key !== 'authorization').sort();
-	const pairs: string[] = [];
-	for (const key of keys) {
-		const val = normalized(String(params[key]));
-		const encodedKey = encodeURIComponent(key).replace(/[!'()*]/g, (c) => {
-			return '%' + c.charCodeAt(0).toString(16).toUpperCase();
-		});
-		pairs.push(`${encodedKey}=${val}`);
-	}
-	return pairs.join('&');
-}
-
-/**
- * 规范化请求头字符串
- */
-function canonicalHeaderStr(headers: IDataObject, signedHeaders?: string[]): string {
-	const headersNormLower: Record<string, string> = {};
-	for (const [k, v] of Object.entries(headers)) {
-		const keyNormLower = normalized(k.toLowerCase());
-		const valueNormLower = normalized(String(v).trim());
-		headersNormLower[keyNormLower] = valueNormLower;
-	}
-
-	const keys = Object.keys(headersNormLower).sort();
-	if (!keys.includes('host')) {
-		throw new NodeOperationError(
-			// @ts-expect-error - This is a utility function, not a node execution context
-			null,
-			'Host header is required',
-		);
-	}
-
-	const headerList: string[] = [];
-	const defaultSigned = ['host', 'content-length', 'content-type', 'content-md5'];
-
-		if (signedHeaders) {
-			for (const key of signedHeaders) {
-				const keyNorm = normalized(key.toLowerCase());
-				if (!keys.includes(keyNorm)) {
-					throw new NodeOperationError(
-						// @ts-expect-error - This is a utility function, not a node execution context
-						null,
-						`Header ${key} not found`,
-					);
-				}
-			if (headersNormLower[keyNorm]) {
-				headerList.push(`${keyNorm}:${headersNormLower[keyNorm]}`);
-			}
-		}
-	} else {
-		for (const key of keys) {
-			if (key.startsWith('x-bce-') || defaultSigned.includes(key)) {
-				headerList.push(`${key}:${headersNormLower[key]}`);
-			}
-		}
-	}
-
-	return headerList.join('\n');
-}
-
-/**
- * 计算签名密钥
- */
-function calcSigningKey(auth: {
-	version: string;
-	access: string;
-	timestamp: string;
-	period: string;
-}, secretKey: string): string {
-	const stringToSign = `${auth.version}/${auth.access}/${auth.timestamp}/${auth.period}`;
-	return crypto.createHmac('sha256', secretKey).update(stringToSign, 'utf-8').digest('hex');
-}
-
-/**
- * 计算签名
- */
-function calcSignature(
-	signingKey: string,
-	method: string,
-	uri: string,
-	params: IDataObject,
-	headers: IDataObject,
-	signedHeaders: string[],
-): string {
-	const canonicalRequest = [
-		method.toUpperCase(),
-		normalizedUri(uri),
-		canonicalQs(params),
-		canonicalHeaderStr(headers, signedHeaders),
-	].join('\n');
-
-	// signingKey 是 hex 字符串，需要转换为 Buffer
-	// @ts-expect-error - Buffer is a Node.js built-in
-	const signingKeyBuffer = Buffer.from(signingKey, 'hex');
-	return crypto
-		.createHmac('sha256', signingKeyBuffer)
-		.update(canonicalRequest, 'utf-8')
-		.digest('hex');
-}
-
-/**
- * 生成百度百舸平台签名
- * 签名鉴权文档参考：https://cloud.baidu.com/doc/AIHC/s/4maz04s1c
- * 根据百度百舸平台官方签名算法实现
- */
-function generateBaiduCloudSignature(
-	method: string,
-	uri: string,
-	params: IDataObject,
-	headers: IDataObject,
-	accessKey: string,
-	secretKey: string,
-): string {
-	const timestamp = getCanonicalTime();
-	const period = '1800';
-
-	// 获取需要签名的请求头
-	const signedHeaders = Object.keys(headers)
-		.map((key) => key.toLowerCase())
-		.filter((key) => key !== '')
-		.sort();
-
-	// 构建授权对象
-	const auth = {
-		version: 'bce-auth-v1',
-		access: accessKey,
-		timestamp,
-		period,
-		signedHeaders,
-	};
-
-	// 计算签名密钥
-	const signingKey = calcSigningKey(auth, secretKey);
-
-	// 计算签名
-	const signature = calcSignature(signingKey, method, uri, params, headers, signedHeaders);
-
-	// 序列化授权字符串
-	return `${auth.version}/${auth.access}/${auth.timestamp}/${auth.period}/${signedHeaders.join(';')}/${signature}`;
+function isJobAction(action: string): boolean {
+	const jobActions = [
+		'DescribeJobs',
+		'CreateJob',
+		'DeleteJob',
+		'DescribeJob',
+		'ModifyJob',
+		'DescribeJobEvents',
+		'DescribeJobLogs',
+		'DescribePodEvents',
+		'StopJob',
+		'DescribeJobMetrics',
+		'DescribeJobNodes',
+		'DescribeJobWebterminal',
+	];
+	return jobActions.includes(action);
 }
 
 /**
@@ -220,51 +54,37 @@ async function getResourcePools(
 	}
 
 	try {
-		// 构建 DescribeResourcePools API 请求
-		// @ts-expect-error - URL is a Node.js built-in
-		const domain = new URL(baseURL).hostname;
-		const uri = '/';
-		const queryParams: IDataObject = {
+		// 使用 BceBaseClient 发送请求
+		const bceConfig = {
+			endpoint: baseURL,
+			credentials: {
+				ak: accessKey,
+				sk: secretKey,
+			},
+		};
+
+		const client = new BceBaseClient(bceConfig, 'aihc');
+
+		const params = {
 			action: 'DescribeResourcePools',
+			resourcePoolType:'common'
 		};
-		const httpMethod = 'GET';
 
-		// 构建请求头
-		const canonicalTime = getCanonicalTime();
-		const headers: IDataObject = {
-			'x-bce-date': canonicalTime,
+		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
-			Host: domain,
-			'X-API-VERSION': 'v2',
-		};
-
-		// 生成签名
-		const authorization = generateBaiduCloudSignature(
-			httpMethod,
-			uri,
-			queryParams,
-			headers,
-			accessKey,
-			secretKey,
-		);
-
-		// 添加 Authorization 头
-		headers.Authorization = authorization;
-
-		// 构建请求选项
-		const options: IHttpRequestOptions = {
-			method: 'GET',
-			url: baseURL,
-			headers: headers as Record<string, string>,
-			qs: queryParams,
-			json: true,
+			version: 'v2', // DescribeResourcePools 使用 version: v2
 		};
 
 		// 发送请求
-		const responseData = (await this.helpers.httpRequest.call(this, options)) as IDataObject;
+		const response = await client.sendRequest('GET', '/', {
+			params,
+			config: {},
+			headers,
+		});
 
 		// 解析响应数据
 		// 根据百度百舸平台 API 响应格式，资源池列表通常在 responseData.result 或 responseData.data 中
+		const responseData = response.body as IDataObject;
 		let resourcePools: IDataObject[] = [];
 		if (Array.isArray(responseData)) {
 			resourcePools = responseData;
@@ -339,23 +159,193 @@ export class Aihc implements INodeType {
 		},
 		properties: [
 			{
-				displayName: '操作',
-				name: 'operation',
+				displayName: '资源',
+				name: 'resource',
 				type: 'options',
 				noDataExpression: true,
 				options: [
 					{
-						name: '查询资源池列表',
-						value: 'describeResourcePools',
-						action: '查询资源池列表',
-						description: '查询所有资源池列表',
+						name: 'API',
+						value: 'api',
 					},
 					{
-						name: '查询训练任务列表',
+						name: '开发实例',
+						value: 'devInstance',
+					},
+					{
+						name: '数据集',
+						value: 'dataset',
+					},
+					{
+						name: '服务',
+						value: 'service',
+					},
+					{
+						name: '模型',
+						value: 'model',
+					},
+					{
+						name: '训练任务',
+						value: 'job',
+					},
+					{
+						name: '资源池',
+						value: 'resourcePool',
+					},
+					{
+						name: '队列',
+						value: 'queue',
+					},
+				],
+				default: 'resourcePool',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
+						value: 'describeDatasets',
+						action: '查询数据集列表',
+					},
+				],
+				default: 'describeDatasets',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['devInstance'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
+						value: 'describeDevInstances',
+						action: '查询开发实例列表',
+					},
+				],
+				default: 'describeDevInstances',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['job'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
 						value: 'describeJobs',
 						action: '查询训练任务列表',
 						description: '查询指定资源池的训练任务列表',
 					},
+				],
+				default: 'describeJobs',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['model'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
+						value: 'describeModels',
+						action: '查询模型列表',
+					},
+				],
+				default: 'describeModels',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['queue'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
+						value: 'describeQueues',
+						action: '查询队列列表',
+						description: '查询指定资源池的队列列表',
+					},
+				],
+				default: 'describeQueues',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['resourcePool'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
+						value: 'describeResourcePools',
+						action: '查询资源池列表',
+						description: '查询所有资源池列表',
+					},
+				],
+				default: 'describeResourcePools',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['service'],
+					},
+				},
+				options: [
+					{
+						name: '查询列表',
+						value: 'describeServices',
+						action: '查询服务列表',
+					},
+				],
+				default: 'describeServices',
+			},
+			{
+				displayName: '操作',
+				name: 'operation',
+				type: 'options',
+				noDataExpression: true,
+				displayOptions: {
+					show: {
+						resource: ['api'],
+					},
+				},
+				options: [
 					{
 						name: '调用 API',
 						value: 'callApi',
@@ -363,7 +353,7 @@ export class Aihc implements INodeType {
 						description: '调用百度百舸平台 OpenAPI 接口',
 					},
 				],
-				default: 'describeResourcePools',
+				default: 'callApi',
 			},
 			{
 				displayName: '资源池 ID',
@@ -378,6 +368,7 @@ export class Aihc implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
+						resource: ['job'],
 						operation: ['describeJobs'],
 					},
 				},
@@ -394,6 +385,7 @@ export class Aihc implements INodeType {
 					'完整的 API URL（包含查询参数）或 API 路径。例如：http://aihc.bj.baidubce.com/?action=DescribeJobs&resourcePoolId=xxx',
 				displayOptions: {
 					show: {
+						resource: ['api'],
 						operation: ['callApi'],
 					},
 				},
@@ -424,6 +416,7 @@ export class Aihc implements INodeType {
 				required: true,
 				displayOptions: {
 					show: {
+						resource: ['api'],
 						operation: ['callApi'],
 					},
 				},
@@ -441,6 +434,7 @@ export class Aihc implements INodeType {
 					'URL 查询参数，格式：key1=value1&key2=value2。如果 API URL 中已包含查询参数，此项可为空',
 				displayOptions: {
 					show: {
+						resource: ['api'],
 						operation: ['callApi'],
 					},
 				},
@@ -456,6 +450,207 @@ export class Aihc implements INodeType {
 					},
 				},
 				description: '请求体内容（JSON 格式）',
+			},
+			// 数据集查询参数
+			{
+				displayName: '页码',
+				name: 'pageNumber',
+				type: 'number',
+				default: 1,
+				displayOptions: {
+					show: {
+						resource: ['dataset', 'model', 'devInstance', 'service', 'queue'],
+					},
+				},
+				description: '页码，从 1 开始',
+			},
+			{
+				displayName: '每页数量',
+				name: 'pageSize',
+				type: 'number',
+				default: 10,
+				displayOptions: {
+					show: {
+						resource: ['dataset', 'devInstance', 'service', 'queue'],
+					},
+				},
+				description: '每页返回的数量',
+			},
+			{
+				displayName: '关键词',
+				name: 'keyword',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['dataset', 'model'],
+					},
+				},
+				description: '搜索关键词',
+			},
+			{
+				displayName: '存储类型',
+				name: 'storageType',
+				type: 'options',
+				options: [
+					{ name: 'BOS', value: 'BOS' },
+					{ name: 'PFS', value: 'PFS' },
+				],
+				default: 'BOS',
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+					},
+				},
+				description: '存储类型过滤',
+			},
+			{
+				displayName: '存储实例',
+				name: 'storageInstances',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+					},
+				},
+				description: '存储实例过滤',
+			},
+			{
+				displayName: '导入格式',
+				name: 'importFormat',
+				type: 'options',
+				options: [
+					{ name: 'FILE', value: 'FILE' },
+					{ name: 'FOLDER', value: 'FOLDER' },
+				],
+				default: 'FILE',
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+					},
+				},
+				description: '导入格式过滤',
+			},
+			// 开发实例查询参数
+			{
+				displayName: '仅显示我的实例',
+				name: 'onlyMyDevs',
+				type: 'boolean',
+				default: false,
+				displayOptions: {
+					show: {
+						resource: ['devInstance'],
+					},
+				},
+				description: 'Whether to show only the current user\'s development instances',
+			},
+			{
+				displayName: '资源池 ID（开发实例）',
+				name: 'devResourcePoolId',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['devInstance'],
+					},
+				},
+				description: '资源池 ID 过滤',
+			},
+			{
+				displayName: '队列名称（开发实例）',
+				name: 'devQueueName',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['devInstance'],
+					},
+				},
+				description: '队列名称过滤',
+			},
+			{
+				displayName: '状态（开发实例）',
+				name: 'devStatus',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['devInstance'],
+					},
+				},
+				description: '状态过滤',
+			},
+			// 队列查询参数
+			{
+				displayName: '资源池 ID（队列）',
+				name: 'queueResourcePoolId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['queue'],
+					},
+				},
+				description: '资源池 ID',
+			},
+			{
+				displayName: '关键词类型（队列）',
+				name: 'queueKeywordType',
+				type: 'options',
+				options: [
+					{ name: '队列名称', value: 'queueName' },
+					{ name: '队列 ID', value: 'queueId' },
+				],
+				default: 'queueName',
+				displayOptions: {
+					show: {
+						resource: ['queue'],
+					},
+				},
+				description: '关键词搜索类型',
+			},
+			{
+				displayName: '关键词（队列）',
+				name: 'queueKeyword',
+				type: 'string',
+				default: '',
+				displayOptions: {
+					show: {
+						resource: ['queue'],
+					},
+				},
+				description: '搜索关键词',
+			},
+			// 服务查询参数
+			{
+				displayName: '排序字段（服务）',
+				name: 'serviceOrderBy',
+				type: 'string',
+				default: 'createdAt',
+				displayOptions: {
+					show: {
+						resource: ['service'],
+					},
+				},
+				description: '排序字段',
+			},
+			{
+				displayName: '排序方向（服务）',
+				name: 'serviceOrder',
+				type: 'options',
+				options: [
+					{ name: '升序', value: 'asc' },
+					{ name: '降序', value: 'desc' },
+				],
+				default: 'desc',
+				displayOptions: {
+					show: {
+						resource: ['service'],
+					},
+				},
+				description: '排序方向',
 			},
 		],
 	};
@@ -484,27 +679,33 @@ export class Aihc implements INodeType {
 					);
 				}
 
-				let url: string;
-				let uri: string;
-				let domain: string;
+				// 使用 BceBaseClient 发送请求
+				const bceConfig = {
+					endpoint: baseURL,
+					credentials: {
+						ak: accessKey,
+						sk: secretKey,
+					},
+				};
+
+				const client = new BceBaseClient(bceConfig, 'aihc');
+
 				let queryParams: IDataObject = {};
 				let httpMethod: string;
-				let requestBody: IDataObject | undefined;
+				let requestBody: string | null = null;
+				let action: string;
 
 				if (operation === 'describeResourcePools') {
 					// 查询资源池列表操作
-					// action=DescribeResourcePools 是固定的，使用 GET 方法
-					// @ts-expect-error - URL is a Node.js built-in
-					domain = new URL(baseURL).hostname;
-					uri = '/';
+					action = 'DescribeResourcePools';
 					queryParams = {
-						action: 'DescribeResourcePools', // 固定值，不可修改
+						action,
+						resourcePoolType:'common'
 					};
 					httpMethod = 'GET';
-					url = baseURL;
 				} else if (operation === 'describeJobs') {
 					// 查询训练任务列表操作
-					// 参考文档：https://cloud.baidu.com/doc/AIHC/s/xmayvctia
+					// 根据参考脚本，DescribeJobs 需要将部分参数放在 body 中
 					const resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
 
 					if (!resourcePoolId) {
@@ -513,135 +714,154 @@ export class Aihc implements INodeType {
 						});
 					}
 
-					// 构建 DescribeJobs API 请求
-					// action=DescribeJobs 是固定的，不能修改
-					// @ts-expect-error - URL is a Node.js built-in
-					domain = new URL(baseURL).hostname;
-					uri = '/';
+					action = 'DescribeJobs';
+					// queryParams 只包含 action 和 resourcePoolId
 					queryParams = {
-						action: 'DescribeJobs', // 固定值，不可修改
+						action,
 						resourcePoolId,
 					};
+					// body 参数（pageNumber, pageSize 等应该在 body 中，但当前实现中这些参数还没有添加）
+					// 暂时使用空 body，后续可以添加更多参数
+					requestBody = JSON.stringify({});
 					httpMethod = 'POST';
-					url = baseURL;
-				} else if (operation === 'callApi') {
-					// 通用 API 调用操作
-					const apiPathOrUrl = this.getNodeParameter('apiPath', itemIndex, '') as string;
-					httpMethod = this.getNodeParameter('httpMethod', itemIndex, 'GET') as string;
-					const queryParametersStr = this.getNodeParameter('queryParameters', itemIndex, '') as string;
-					const requestBodyStr = this.getNodeParameter('requestBody', itemIndex, '') as string;
+				} else if (operation === 'describeDatasets') {
+					// 查询数据集列表操作
+					action = 'DescribeDatasets';
+					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
+					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
+					const keyword = this.getNodeParameter('keyword', itemIndex, '') as string;
+					const storageType = this.getNodeParameter('storageType', itemIndex, '') as string;
+					const storageInstances = this.getNodeParameter('storageInstances', itemIndex, '') as string;
+					const importFormat = this.getNodeParameter('importFormat', itemIndex, '') as string;
 
-					if (!apiPathOrUrl) {
-						throw new NodeOperationError(this.getNode(), 'API URL 或路径不能为空', {
+					queryParams = {
+						action,
+						pageNumber: pageNumber.toString(),
+						pageSize: pageSize.toString(),
+					};
+
+					if (keyword) queryParams['keyword'] = keyword;
+					if (storageType) queryParams['storageType'] = storageType;
+					if (storageInstances) queryParams['storageInstances'] = storageInstances;
+					if (importFormat) queryParams['importFormat'] = importFormat;
+
+					httpMethod = 'GET';
+				} else if (operation === 'describeModels') {
+					// 查询模型列表操作
+					action = 'DescribeModels';
+					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
+					const keyword = this.getNodeParameter('keyword', itemIndex, '') as string;
+
+					queryParams = {
+						action,
+						pageNumber: pageNumber.toString(),
+					};
+
+					if (keyword) queryParams['keyword'] = keyword;
+
+					httpMethod = 'GET';
+				} else if (operation === 'describeDevInstances') {
+					// 查询开发实例列表操作
+					action = 'DescribeDevInstances';
+					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
+					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
+					const onlyMyDevs = this.getNodeParameter('onlyMyDevs', itemIndex, false) as boolean;
+					const devResourcePoolId = this.getNodeParameter('devResourcePoolId', itemIndex, '') as string;
+					const devQueueName = this.getNodeParameter('devQueueName', itemIndex, '') as string;
+					const devStatus = this.getNodeParameter('devStatus', itemIndex, '') as string;
+
+					queryParams = {
+						action,
+						pageNumber: pageNumber.toString(),
+						pageSize: pageSize.toString(),
+						onlyMyDevs: onlyMyDevs ? 'true' : 'false',
+					};
+
+					if (devResourcePoolId) queryParams['resourcePoolId'] = devResourcePoolId;
+					if (devQueueName) queryParams['queueName'] = devQueueName;
+					if (devStatus) queryParams['status'] = devStatus;
+
+					httpMethod = 'GET';
+				} else if (operation === 'describeServices') {
+					// 查询服务列表操作
+					action = 'DescribeServices';
+					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
+					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
+					const serviceOrderBy = this.getNodeParameter('serviceOrderBy', itemIndex, 'createdAt') as string;
+					const serviceOrder = this.getNodeParameter('serviceOrder', itemIndex, 'desc') as string;
+
+					queryParams = {
+						action,
+						pageNumber: pageNumber.toString(),
+						pageSize: pageSize.toString(),
+						orderBy: serviceOrderBy,
+						order: serviceOrder,
+					};
+
+					httpMethod = 'GET';
+				} else if (operation === 'describeQueues') {
+					// 查询队列列表操作
+					action = 'DescribeQueues';
+					const queueResourcePoolId = this.getNodeParameter('queueResourcePoolId', itemIndex, '') as string;
+					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
+					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
+					const queueKeywordType = this.getNodeParameter('queueKeywordType', itemIndex, '') as string;
+					const queueKeyword = this.getNodeParameter('queueKeyword', itemIndex, '') as string;
+
+					if (!queueResourcePoolId) {
+						throw new NodeOperationError(this.getNode(), '资源池 ID 不能为空', {
 							itemIndex,
 						});
 					}
 
-					// 解析 URL 或路径
-					if (apiPathOrUrl.startsWith('http://') || apiPathOrUrl.startsWith('https://')) {
-						// 完整 URL
-						url = apiPathOrUrl;
-						try {
-							// @ts-expect-error - URL is a Node.js built-in
-							const urlObj = new URL(apiPathOrUrl);
-							domain = urlObj.hostname;
-							uri = urlObj.pathname;
-							// 解析 URL 中的查询参数
-							urlObj.searchParams.forEach((value: string, key: string) => {
-								queryParams[key] = value;
-							});
-						} catch {
-							throw new NodeOperationError(this.getNode(), `无效的 URL: ${apiPathOrUrl}`, {
-								itemIndex,
-							});
-						}
-					} else {
-						// 仅路径，需要拼接 baseURL
-						uri = apiPathOrUrl.split('?')[0];
-						// @ts-expect-error - URL is a Node.js built-in
-						domain = new URL(baseURL).hostname;
-						url = `${baseURL}${apiPathOrUrl}`;
-						// 解析路径中的查询参数
-						if (apiPathOrUrl.includes('?')) {
-							const queryString = apiPathOrUrl.split('?')[1];
-							const params = queryString.split('&');
-							for (const param of params) {
-								const [key, value] = param.split('=');
-								if (key) {
-									queryParams[key] = decodeURIComponent(value || '');
-								}
-							}
-						}
-					}
+					queryParams = {
+						action,
+						resourcePoolId: queueResourcePoolId,
+					};
 
-					// 解析额外的查询参数（如果提供）
-					if (queryParametersStr) {
-						const params = queryParametersStr.split('&');
-						for (const param of params) {
-							const [key, value] = param.split('=');
-							if (key) {
-								queryParams[key] = decodeURIComponent(value || '');
-							}
-						}
-					}
+					if (queueKeywordType) queryParams['keywordType'] = queueKeywordType;
+					if (queueKeyword) queryParams['keyword'] = queueKeyword;
+					if (pageNumber) queryParams['pageNumber'] = pageNumber.toString();
+					if (pageSize) queryParams['pageSize'] = pageSize.toString();
 
-					// 解析请求体
-					if (requestBodyStr && (httpMethod === 'POST' || httpMethod === 'PUT')) {
-						try {
-							requestBody = JSON.parse(requestBodyStr) as IDataObject;
-						} catch {
-							throw new NodeOperationError(
-								this.getNode(),
-								'请求体格式错误，必须是有效的 JSON 格式',
-								{
-									itemIndex,
-								},
-							);
-						}
-					}
+					httpMethod = 'GET';
 				} else {
 					throw new NodeOperationError(this.getNode(), `未知操作: ${operation}`, {
 						itemIndex,
 					});
 				}
 
-				// 构建请求头（根据 Python 脚本）
-				const canonicalTime = getCanonicalTime();
-				const headers: IDataObject = {
-					'x-bce-date': canonicalTime,
+				// 构建请求头（根据参考脚本）
+				const headers: Record<string, string> = {
 					'Content-Type': 'application/json',
-					Host: domain,
-					'X-API-VERSION': 'v2',
 				};
 
-				// 生成签名
-				const authorization = generateBaiduCloudSignature(
-					httpMethod,
-					uri,
-					queryParams,
-					headers,
-					accessKey,
-					secretKey,
-				);
-
-				// 添加 Authorization 头
-				headers.Authorization = authorization;
-
-				// 构建请求选项
-				const options: IHttpRequestOptions = {
-					method: httpMethod as 'GET' | 'POST' | 'PUT' | 'DELETE',
-					url: url,
-					headers: headers as Record<string, string>,
-					qs: queryParams,
-					json: true,
-				};
-
-				if (requestBody) {
-					options.body = requestBody;
+				// Job 相关接口使用 X-API-Version: v2，其他接口使用 version: v2
+				if (isJobAction(action)) {
+					headers['X-API-Version'] = 'v2';
+				} else {
+					headers['version'] = 'v2';
 				}
 
 				// 发送请求
-				const responseData = await this.helpers.httpRequest.call(this, options);
+				let response;
+				if (httpMethod === 'POST' || httpMethod === 'PUT') {
+					response = await client.sendRequest(httpMethod, '/', {
+						params: queryParams,
+						config: {},
+						headers,
+						body: requestBody || null,
+					});
+				} else {
+					response = await client.sendRequest(httpMethod, '/', {
+						params: queryParams,
+						config: {},
+						headers,
+					});
+				}
+
+				// 解析响应数据
+				const responseData = response.body;
 
 				// 处理响应
 				if (Array.isArray(responseData)) {
