@@ -1,3 +1,4 @@
+/* eslint-disable n8n-nodes-base/node-param-options-type-unsorted-items */
 import type {
 	IExecuteFunctions,
 	INodeExecutionData,
@@ -165,8 +166,8 @@ export class Aihc implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'API',
-						value: 'api',
+						name: '训练任务',
+						value: 'job',
 					},
 					{
 						name: '开发实例',
@@ -185,16 +186,16 @@ export class Aihc implements INodeType {
 						value: 'model',
 					},
 					{
-						name: '训练任务',
-						value: 'job',
-					},
-					{
 						name: '资源池',
 						value: 'resourcePool',
 					},
 					{
 						name: '队列',
 						value: 'queue',
+					},
+					{
+						name: '自定义API调用',
+						value: 'api',
 					},
 				],
 				default: 'resourcePool',
@@ -375,14 +376,14 @@ export class Aihc implements INodeType {
 				description: '从下拉列表中选择资源池，或输入资源池 ID',
 			},
 			{
-				displayName: 'API URL 或路径',
+				displayName: 'API 路径',
 				name: 'apiPath',
 				type: 'string',
 				default: '',
 				required: true,
-				placeholder: 'http://aihc.bj.baidubce.com/?action=DescribeJobs&resourcePoolId=xxx',
+				placeholder: '/?action=DescribeJobs&resourcePoolId=xxx',
 				description:
-					'完整的 API URL（包含查询参数）或 API 路径。例如：http://aihc.bj.baidubce.com/?action=DescribeJobs&resourcePoolId=xxx',
+					'API 路径（不包含域名），可包含查询参数。例如：/?action=DescribeJobs&resourcePoolId=xxx',
 				displayOptions: {
 					show: {
 						resource: ['api'],
@@ -825,6 +826,71 @@ export class Aihc implements INodeType {
 					if (pageSize) queryParams['pageSize'] = pageSize.toString();
 
 					httpMethod = 'GET';
+				} else if (operation === 'callApi') {
+					// 通用 API 调用操作
+					// 域名从凭证中的 baseURL 获取，用户只需输入路径
+					let apiPath = this.getNodeParameter('apiPath', itemIndex, '') as string;
+					httpMethod = this.getNodeParameter('httpMethod', itemIndex, 'GET') as string;
+					const queryParametersStr = this.getNodeParameter('queryParameters', itemIndex, '') as string;
+					const requestBodyStr = this.getNodeParameter('requestBody', itemIndex, '') as string;
+
+					if (!apiPath) {
+						throw new NodeOperationError(this.getNode(), 'API 路径不能为空', {
+							itemIndex,
+						});
+					}
+
+					// 如果用户输入了完整 URL（包含域名），提取路径部分
+					// 域名应该从凭证中的 baseURL 获取
+					if (apiPath.startsWith('http://') || apiPath.startsWith('https://')) {
+						try {
+							// @ts-expect-error - URL is a Node.js built-in global
+							const url = new URL(apiPath);
+							apiPath = url.pathname + url.search;
+						} catch {
+							// 如果 URL 解析失败，尝试简单提取
+							const match = apiPath.match(/https?:\/\/[^/]+(\/.*)/);
+							if (match) {
+								apiPath = match[1];
+							}
+						}
+					}
+
+					// 确保路径以 / 开头
+					if (!apiPath.startsWith('/')) {
+						apiPath = '/' + apiPath;
+					}
+
+					// 解析路径中的查询参数
+					if (apiPath.includes('?')) {
+						const queryString = apiPath.split('?')[1];
+						const params = queryString.split('&');
+						for (const param of params) {
+							const [key, value] = param.split('=');
+							if (key) {
+								queryParams[key] = decodeURIComponent(value || '');
+							}
+						}
+					}
+
+					// 解析额外的查询参数（如果提供）
+					if (queryParametersStr) {
+						const params = queryParametersStr.split('&');
+						for (const param of params) {
+							const [key, value] = param.split('=');
+							if (key) {
+								queryParams[key] = decodeURIComponent(value || '');
+							}
+						}
+					}
+
+					// 获取 action
+					action = (queryParams.action as string) || '';
+
+					// 解析请求体
+					if (requestBodyStr && (httpMethod === 'POST' || httpMethod === 'PUT')) {
+						requestBody = requestBodyStr;
+					}
 				} else {
 					throw new NodeOperationError(this.getNode(), `未知操作: ${operation}`, {
 						itemIndex,
