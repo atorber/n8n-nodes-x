@@ -359,7 +359,7 @@ export class Aihc implements INodeType {
 			{
 				displayName: '资源池 ID',
 				name: 'resourcePoolId',
-				type: 'options',
+				type: 'string',
 				typeOptions: {
 					listSearch: {
 						method: 'getResourcePools',
@@ -373,7 +373,7 @@ export class Aihc implements INodeType {
 						operation: ['describeJobs'],
 					},
 				},
-				description: '从下拉列表中选择资源池，或输入资源池 ID',
+				description: '输入资源池 ID，或点击输入框右侧的搜索图标从资源池列表中选择',
 			},
 			{
 				displayName: 'API 路径',
