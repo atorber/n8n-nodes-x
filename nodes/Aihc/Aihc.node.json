@@ -1,17 +1,17 @@
 {
-	"node": "n8n-nodes-icafe",
+	"node": "n8n-nodes-aihc",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
 	"categories": ["Development", "Developer Tools"],
 	"resources": {
 		"credentialDocumentation": [
 			{
-				"url": "https://github.com/org/repo?tab=readme-ov-file#credentials"
+				"url": "https://cloud.baidu.com/doc/AIHC/s/4maz04s1c"
 			}
 		],
 		"primaryDocumentation": [
 			{
-				"url": "https://github.com/org/repo?tab=readme-ov-file"
+				"url": "https://cloud.baidu.com/doc/AIHC/s/4maz04s1c"
 			}
 		]
 	}
