@@ -1,0 +1,54 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "npm run build",
+			"problemMatcher": [],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "link",
+			"type": "shell",
+			"command": "npm link",
+			"problemMatcher": []
+		},
+		{
+			"label": "build and link",
+			"type": "shell",
+			"command": "npm run build && npm link",
+			"problemMatcher": []
+		},
+		{
+			"label": "link in n8n custom",
+			"type": "shell",
+			"command": "cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
+			"problemMatcher": []
+		},
+		{
+			"label": "start n8n",
+			"type": "shell",
+			"command": "cd /Users/luyuchao/Documents/GitHub/n8n && npm start",
+			"problemMatcher": [],
+			"isBackground": true
+		},
+		{
+			"label": "build, link and prepare n8n",
+			"type": "shell",
+			"command": "npm run build && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
+			"problemMatcher": []
+		},
+		{
+			"label": "build, link and start n8n",
+			"type": "shell",
+			"command": "npm run build && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x && cd /Users/luyuchao/Documents/GitHub/n8n && npm start",
+			"problemMatcher": [],
+			"isBackground": true
+		}
+	]
+}
+
