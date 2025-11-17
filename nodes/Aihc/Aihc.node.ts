@@ -8,6 +8,9 @@ import type {
 	ILoadOptionsFunctions,
 	INodeListSearchItems,
 	INodeListSearchResult,
+	ICredentialTestFunctions,
+	ICredentialsDecrypted,
+	INodeCredentialTestResult,
 } from 'n8n-workflow';
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
@@ -669,6 +672,8 @@ export class Aihc implements INodeType {
 				const accessKey = credentials?.accessKey as string;
 				const secretKey = credentials?.secretKey as string;
 				const baseURL = (credentials?.baseURL as string) || 'http://aihc.bj.baidubce.com';
+				const defaultResourcePoolId = (credentials?.defaultResourcePoolId as string) || '';
+				const defaultQueue = (credentials?.defaultQueue as string) || '';
 
 				if (!accessKey || !secretKey) {
 					throw new NodeOperationError(
@@ -707,7 +712,11 @@ export class Aihc implements INodeType {
 				} else if (operation === 'describeJobs') {
 					// 查询训练任务列表操作
 					// 根据参考脚本，DescribeJobs 需要将部分参数放在 body 中
-					const resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
+					let resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
+					// 如果节点参数未填写，使用凭证中的默认值
+					if (!resourcePoolId && defaultResourcePoolId) {
+						resourcePoolId = defaultResourcePoolId;
+					}
 
 					if (!resourcePoolId) {
 						throw new NodeOperationError(this.getNode(), '资源池 ID 不能为空', {
@@ -767,9 +776,17 @@ export class Aihc implements INodeType {
 					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
 					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
 					const onlyMyDevs = this.getNodeParameter('onlyMyDevs', itemIndex, false) as boolean;
-					const devResourcePoolId = this.getNodeParameter('devResourcePoolId', itemIndex, '') as string;
-					const devQueueName = this.getNodeParameter('devQueueName', itemIndex, '') as string;
+					let devResourcePoolId = this.getNodeParameter('devResourcePoolId', itemIndex, '') as string;
+					let devQueueName = this.getNodeParameter('devQueueName', itemIndex, '') as string;
 					const devStatus = this.getNodeParameter('devStatus', itemIndex, '') as string;
+
+					// 如果节点参数未填写，使用凭证中的默认值
+					if (!devResourcePoolId && defaultResourcePoolId) {
+						devResourcePoolId = defaultResourcePoolId;
+					}
+					if (!devQueueName && defaultQueue) {
+						devQueueName = defaultQueue;
+					}
 
 					queryParams = {
 						action,
@@ -803,11 +820,16 @@ export class Aihc implements INodeType {
 				} else if (operation === 'describeQueues') {
 					// 查询队列列表操作
 					action = 'DescribeQueues';
-					const queueResourcePoolId = this.getNodeParameter('queueResourcePoolId', itemIndex, '') as string;
+					let queueResourcePoolId = this.getNodeParameter('queueResourcePoolId', itemIndex, '') as string;
 					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
 					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
 					const queueKeywordType = this.getNodeParameter('queueKeywordType', itemIndex, '') as string;
 					const queueKeyword = this.getNodeParameter('queueKeyword', itemIndex, '') as string;
+
+					// 如果节点参数未填写，使用凭证中的默认值
+					if (!queueResourcePoolId && defaultResourcePoolId) {
+						queueResourcePoolId = defaultResourcePoolId;
+					}
 
 					if (!queueResourcePoolId) {
 						throw new NodeOperationError(this.getNode(), '资源池 ID 不能为空', {
@@ -968,6 +990,127 @@ export class Aihc implements INodeType {
 	methods = {
 		listSearch: {
 			getResourcePools,
+		},
+		credentialTest: {
+			async aihcApi(
+				this: ICredentialTestFunctions,
+				credential: ICredentialsDecrypted,
+			): Promise<INodeCredentialTestResult> {
+				// @ts-expect-error - console 在 Node.js 环境中可用
+				console.log('[Aihc] credentialTest.aihcApi 被调用');
+				// @ts-expect-error - console 在 Node.js 环境中可用
+				console.log('[Aihc] credential.data keys:', Object.keys(credential.data || {}));
+
+				const accessKey = credential.data?.accessKey as string;
+				const secretKey = credential.data?.secretKey as string;
+				const baseURL = (credential.data?.baseURL as string) || 'http://aihc.bj.baidubce.com';
+
+				// @ts-expect-error - console 在 Node.js 环境中可用
+				console.log('[Aihc] accessKey:', accessKey ? `${accessKey.substring(0, 4)}...` : '未设置');
+				// @ts-expect-error - console 在 Node.js 环境中可用
+				console.log('[Aihc] secretKey:', secretKey ? '已设置' : '未设置');
+				// @ts-expect-error - console 在 Node.js 环境中可用
+				console.log('[Aihc] baseURL:', baseURL);
+
+				if (!accessKey || !secretKey) {
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 凭证验证失败：缺少 Access Key 或 Secret Key');
+					return {
+						status: 'Error',
+						message: '凭证中缺少 Access Key 或 Secret Key',
+					};
+				}
+
+				try {
+					// 使用 BceBaseClient 发送请求
+					const bceConfig = {
+						endpoint: baseURL,
+						credentials: {
+							ak: accessKey,
+							sk: secretKey,
+						},
+					};
+
+					const client = new BceBaseClient(bceConfig, 'aihc');
+
+					// 调用数据集列表查询接口进行验证
+					const queryParams = {
+						action: 'DescribeDatasets',
+						pageNumber: '1',
+						pageSize: '1',
+					};
+
+					const headers: Record<string, string> = {
+						'Content-Type': 'application/json',
+						version: 'v2',
+					};
+
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 发送请求到:', baseURL);
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 查询参数:', JSON.stringify(queryParams, null, 2));
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 请求头:', JSON.stringify(headers, null, 2));
+
+					const response = await client.sendRequest('GET', '/', {
+						params: queryParams,
+						config: {},
+						headers,
+					});
+
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 响应状态:', response.statusCode || 'N/A');
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 响应体:', JSON.stringify(response.body, null, 2));
+
+					// 检查响应是否成功
+					if (response.body && typeof response.body === 'object') {
+						// 如果响应包含错误信息，返回错误
+						if ('code' in response.body && response.body.code) {
+							// @ts-expect-error - console 在 Node.js 环境中可用
+							console.log('[Aihc] API 返回错误:', response.body.code, response.body.message);
+							return {
+								status: 'Error',
+								message: `API 请求失败: ${response.body.code} - ${response.body.message || '未知错误'}`,
+							};
+						}
+						// 验证成功
+						// @ts-expect-error - console 在 Node.js 环境中可用
+						console.log('[Aihc] 凭证验证成功');
+						return {
+							status: 'OK',
+							message: '凭证验证成功',
+						};
+					}
+
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.log('[Aihc] 无效的 API 响应格式');
+					return {
+						status: 'Error',
+						message: '无效的 API 响应',
+					};
+				} catch (error) {
+					// @ts-expect-error - console 在 Node.js 环境中可用
+					console.error('[Aihc] 凭证验证异常:', error);
+					
+					// 提供更详细的错误信息
+					let errorMessage = '凭证验证失败';
+					if (error instanceof Error) {
+						errorMessage = `${errorMessage}: ${error.message}`;
+						if (error.stack) {
+							// @ts-expect-error - console 在 Node.js 环境中可用
+							console.error('[Aihc] 错误堆栈:', error.stack);
+						}
+					} else {
+						errorMessage = `${errorMessage}: ${String(error)}`;
+					}
+					
+					return {
+						status: 'Error',
+						message: errorMessage,
+					};
+				}
+			},
 		},
 	};
 }
