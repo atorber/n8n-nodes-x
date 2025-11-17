@@ -369,14 +369,14 @@ export class Aihc implements INodeType {
 					},
 				},
 				default: '',
-				required: true,
+				placeholder: '留空则使用凭证中的默认资源池ID',
 				displayOptions: {
 					show: {
 						resource: ['job'],
 						operation: ['describeJobs'],
 					},
 				},
-				description: '输入资源池 ID，或点击输入框右侧的搜索图标从资源池列表中选择',
+				description: '输入资源池 ID，或点击输入框右侧的搜索图标从资源池列表中选择。如果未填写，将使用凭证中设置的默认资源池ID',
 			},
 			{
 				displayName: 'API 路径',
@@ -554,24 +554,26 @@ export class Aihc implements INodeType {
 				name: 'devResourcePoolId',
 				type: 'string',
 				default: '',
+				placeholder: '留空则使用凭证中的默认资源池ID',
 				displayOptions: {
 					show: {
 						resource: ['devInstance'],
 					},
 				},
-				description: '资源池 ID 过滤',
+				description: '资源池 ID 过滤。如果未填写，将使用凭证中设置的默认资源池ID',
 			},
 			{
 				displayName: '队列名称（开发实例）',
 				name: 'devQueueName',
 				type: 'string',
 				default: '',
+				placeholder: '留空则使用凭证中的默认队列',
 				displayOptions: {
 					show: {
 						resource: ['devInstance'],
 					},
 				},
-				description: '队列名称过滤',
+				description: '队列名称过滤。如果未填写，将使用凭证中设置的默认队列',
 			},
 			{
 				displayName: '状态（开发实例）',
@@ -591,13 +593,13 @@ export class Aihc implements INodeType {
 				name: 'queueResourcePoolId',
 				type: 'string',
 				default: '',
-				required: true,
+				placeholder: '留空则使用凭证中的默认资源池ID',
 				displayOptions: {
 					show: {
 						resource: ['queue'],
 					},
 				},
-				description: '资源池 ID',
+				description: '资源池 ID。如果未填写，将使用凭证中设置的默认资源池ID',
 			},
 			{
 				displayName: '关键词类型（队列）',
