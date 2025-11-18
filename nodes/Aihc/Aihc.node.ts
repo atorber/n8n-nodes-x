@@ -337,7 +337,7 @@ export class Aihc implements INodeType {
 					{
 						name: '获取WebTerminal地址',
 						value: 'describeJobWebterminal',
-						action: '获取训练任务WebTerminal地址',
+						action: 'Web terminal',
 						description: '获取训练任务中指定容器的Web Terminal连接地址',
 					},
 					{
@@ -3045,25 +3045,11 @@ export class Aihc implements INodeType {
 				this: ICredentialTestFunctions,
 				credential: ICredentialsDecrypted,
 			): Promise<INodeCredentialTestResult> {
-				// @ts-expect-error - console 在 Node.js 环境中可用
-				console.log('[Aihc] credentialTest.aihcApi 被调用');
-				// @ts-expect-error - console 在 Node.js 环境中可用
-				console.log('[Aihc] credential.data keys:', Object.keys(credential.data || {}));
-
 				const accessKey = credential.data?.accessKey as string;
 				const secretKey = credential.data?.secretKey as string;
 				const baseURL = (credential.data?.baseURL as string) || 'http://aihc.bj.baidubce.com';
 
-				// @ts-expect-error - console 在 Node.js 环境中可用
-				console.log('[Aihc] accessKey:', accessKey ? `${accessKey.substring(0, 4)}...` : '未设置');
-				// @ts-expect-error - console 在 Node.js 环境中可用
-				console.log('[Aihc] secretKey:', secretKey ? '已设置' : '未设置');
-				// @ts-expect-error - console 在 Node.js 环境中可用
-				console.log('[Aihc] baseURL:', baseURL);
-
 				if (!accessKey || !secretKey) {
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 凭证验证失败：缺少 Access Key 或 Secret Key');
 					return {
 						status: 'Error',
 						message: '凭证中缺少 Access Key 或 Secret Key',
@@ -3094,62 +3080,37 @@ export class Aihc implements INodeType {
 						version: 'v2',
 					};
 
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 发送请求到:', baseURL);
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 查询参数:', JSON.stringify(queryParams, null, 2));
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 请求头:', JSON.stringify(headers, null, 2));
-
 					const response = await client.sendRequest('GET', '/', {
 						params: queryParams,
 						config: {},
 						headers,
 					});
 
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 响应状态:', response.statusCode || 'N/A');
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 响应体:', JSON.stringify(response.body, null, 2));
-
 					// 检查响应是否成功
 					if (response.body && typeof response.body === 'object') {
 						// 如果响应包含错误信息，返回错误
 						if ('code' in response.body && response.body.code) {
-							// @ts-expect-error - console 在 Node.js 环境中可用
-							console.log('[Aihc] API 返回错误:', response.body.code, response.body.message);
 							return {
 								status: 'Error',
 								message: `API 请求失败: ${response.body.code} - ${response.body.message || '未知错误'}`,
 							};
 						}
 						// 验证成功
-						// @ts-expect-error - console 在 Node.js 环境中可用
-						console.log('[Aihc] 凭证验证成功');
 						return {
 							status: 'OK',
 							message: '凭证验证成功',
 						};
 					}
 
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.log('[Aihc] 无效的 API 响应格式');
 					return {
 						status: 'Error',
 						message: '无效的 API 响应',
 					};
 				} catch (error) {
-					// @ts-expect-error - console 在 Node.js 环境中可用
-					console.error('[Aihc] 凭证验证异常:', error);
-					
 					// 提供更详细的错误信息
 					let errorMessage = '凭证验证失败';
 					if (error instanceof Error) {
 						errorMessage = `${errorMessage}: ${error.message}`;
-						if (error.stack) {
-							// @ts-expect-error - console 在 Node.js 环境中可用
-							console.error('[Aihc] 错误堆栈:', error.stack);
-						}
 					} else {
 						errorMessage = `${errorMessage}: ${String(error)}`;
 					}
