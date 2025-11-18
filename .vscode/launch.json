@@ -2,24 +2,30 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "Run build and link",
-			"type": "node",
-			"request": "launch",
-			"runtimeExecutable": "npm",
-			"runtimeArgs": ["link"],
-			"preLaunchTask": "build",
-			"console": "integratedTerminal",
-			"internalConsoleOptions": "neverOpen",
-			"skipFiles": ["<node_internals>/**"]
-		},
-		{
 			"name": "Build, link and start n8n",
 			"type": "node",
 			"request": "launch",
 			"runtimeExecutable": "npm",
 			"runtimeArgs": ["start"],
 			"cwd": "/Users/luyuchao/Documents/GitHub/n8n",
-			"preLaunchTask": "build, link and prepare n8n",
+			"preLaunchTask": "build, link and start n8n",
+			"console": "integratedTerminal",
+			"internalConsoleOptions": "neverOpen",
+			"skipFiles": ["<node_internals>/**"],
+			"serverReadyAction": {
+				"pattern": "n8n ready on",
+				"uriFormat": "http://localhost:5678",
+				"action": "openExternally"
+			}
+		},
+		{
+			"name": "Link and start n8n",
+			"type": "node",
+			"request": "launch",
+			"runtimeExecutable": "npm",
+			"runtimeArgs": ["link"],
+			"cwd": "/Users/luyuchao/Documents/GitHub/n8n",
+			"preLaunchTask": "link in n8n custom",
 			"console": "integratedTerminal",
 			"internalConsoleOptions": "neverOpen",
 			"skipFiles": ["<node_internals>/**"],

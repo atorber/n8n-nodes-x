@@ -26,7 +26,7 @@
 		{
 			"label": "link in n8n custom",
 			"type": "shell",
-			"command": "cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
+			"command": "cd ${workspaceFolder} && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
 			"problemMatcher": []
 		},
 		{
@@ -37,9 +37,9 @@
 			"isBackground": true
 		},
 		{
-			"label": "build, link and prepare n8n",
+			"label": "link and start n8n",
 			"type": "shell",
-			"command": "npm run build && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
+			"command": "cd ${workspaceFolder} && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
 			"problemMatcher": [],
 			"presentation": {
 				"reveal": "always",
@@ -57,9 +57,8 @@
 		{
 			"label": "build, link and start n8n",
 			"type": "shell",
-			"command": "npm run build && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x && cd /Users/luyuchao/Documents/GitHub/n8n && npm start",
-			"problemMatcher": [],
-			"isBackground": true
+			"command": "npm run build && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
+			"problemMatcher": []
 		}
 	]
 }
