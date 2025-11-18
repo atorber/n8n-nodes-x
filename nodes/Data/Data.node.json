@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-data",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Development", "Developer Tools"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://cloud.baidu.com/doc/AIHC/s/4maz04s1c"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://cloud.baidu.com/doc/AIHC/s/4maz04s1c"
+			}
+		]
+	}
+}
