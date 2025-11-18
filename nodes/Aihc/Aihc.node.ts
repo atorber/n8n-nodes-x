@@ -219,6 +219,18 @@ export class Aihc implements INodeType {
 						value: 'describeDatasets',
 						action: '查询数据集列表',
 					},
+					{
+						name: '查询详情',
+						value: 'describeDataset',
+						action: '获取数据集详情',
+						description: '获取指定数据集的详细信息，包括最新版本信息',
+					},
+					{
+						name: '查询版本列表',
+						value: 'describeDatasetVersions',
+						action: '获取数据集版本列表',
+						description: '获取指定数据集的所有版本列表',
+					},
 				],
 				default: 'describeDatasets',
 			},
@@ -237,6 +249,12 @@ export class Aihc implements INodeType {
 						name: '查询列表',
 						value: 'describeDevInstances',
 						action: '查询开发实例列表',
+					},
+					{
+						name: '查询详情',
+						value: 'describeDevInstance',
+						action: '查询开发机详情',
+						description: '获取指定开发机的详细信息',
 					},
 				],
 				default: 'describeDevInstances',
@@ -289,6 +307,18 @@ export class Aihc implements INodeType {
 						value: 'describeModels',
 						action: '查询模型列表',
 					},
+					{
+						name: '查询详情',
+						value: 'describeModel',
+						action: '获取模型详情',
+						description: '获取指定模型的详细信息',
+					},
+					{
+						name: '查询版本列表',
+						value: 'describeModelVersions',
+						action: '获取模型版本列表',
+						description: '获取指定模型的所有版本列表',
+					},
 				],
 				default: 'describeModels',
 			},
@@ -308,6 +338,12 @@ export class Aihc implements INodeType {
 						value: 'describeQueues',
 						action: '查询队列列表',
 						description: '查询指定资源池的队列列表',
+					},
+					{
+						name: '查询详情',
+						value: 'describeQueue',
+						action: '查询队列详情',
+						description: '获取指定队列的详细信息',
 					},
 				],
 				default: 'describeQueues',
@@ -329,6 +365,12 @@ export class Aihc implements INodeType {
 						action: '查询资源池列表',
 						description: '查询所有资源池列表',
 					},
+					{
+						name: '查询详情',
+						value: 'describeResourcePool',
+						action: '查询资源池详情',
+						description: '获取指定资源池的详细信息',
+					},
 				],
 				default: 'describeResourcePools',
 			},
@@ -348,6 +390,12 @@ export class Aihc implements INodeType {
 						value: 'describeServices',
 						action: '查询服务列表',
 					},
+					{
+						name: '查询详情',
+						value: 'describeService',
+						action: '查询服务详情',
+						description: '获取指定服务的详细信息',
+					},
 				],
 				default: 'describeServices',
 			},
@@ -365,7 +413,7 @@ export class Aihc implements INodeType {
 					{
 						name: '调用 API',
 						value: 'callApi',
-						action: 'Open api',
+						action: 'Open API',
 						description: '调用百度百舸平台 OpenAPI 接口',
 					},
 				],
@@ -590,6 +638,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['dataset', 'model', 'devInstance', 'service', 'queue'],
+						operation: ['describeDatasets', 'describeModels', 'describeDevInstances', 'describeServices', 'describeQueues'],
 					},
 				},
 				description: '页码，从 1 开始',
@@ -602,6 +651,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['dataset', 'devInstance', 'service', 'queue'],
+						operation: ['describeDatasets', 'describeDevInstances', 'describeServices', 'describeQueues'],
 					},
 				},
 				description: '每页返回的数量',
@@ -614,6 +664,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['dataset', 'model'],
+						operation: ['describeDatasets', 'describeModels'],
 					},
 				},
 				description: '搜索关键词',
@@ -630,6 +681,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['dataset'],
+						operation: ['describeDatasets'],
 					},
 				},
 				description: '存储类型过滤',
@@ -642,6 +694,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['dataset'],
+						operation: ['describeDatasets'],
 					},
 				},
 				description: '存储实例过滤',
@@ -658,9 +711,90 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['dataset'],
+						operation: ['describeDatasets'],
 					},
 				},
 				description: '导入格式过滤',
+			},
+			{
+				displayName: '数据集 ID',
+				name: 'datasetId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+						operation: ['describeDataset', 'describeDatasetVersions'],
+					},
+				},
+				description: '要查询的数据集ID',
+			},
+			{
+				displayName: '页码',
+				name: 'datasetVersionPageNumber',
+				type: 'number',
+				default: 1,
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+						operation: ['describeDatasetVersions'],
+					},
+				},
+				description: '请求分页参数，表示第几页，默认值为1',
+			},
+			{
+				displayName: '每页数量',
+				name: 'datasetVersionPageSize',
+				type: 'number',
+				default: 0,
+				displayOptions: {
+					show: {
+						resource: ['dataset'],
+						operation: ['describeDatasetVersions'],
+					},
+				},
+				description: '单页结果数，不传递该参数默认返回全部（设置为0表示返回全部）',
+			},
+			{
+				displayName: '模型 ID',
+				name: 'modelId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['model'],
+						operation: ['describeModel', 'describeModelVersions'],
+					},
+				},
+				description: '要查询的模型ID',
+			},
+			{
+				displayName: '页码',
+				name: 'modelVersionPageNumber',
+				type: 'number',
+				default: 1,
+				displayOptions: {
+					show: {
+						resource: ['model'],
+						operation: ['describeModelVersions'],
+					},
+				},
+				description: '分页参数，没传默认1',
+			},
+			{
+				displayName: '每页数量',
+				name: 'modelVersionPageSize',
+				type: 'number',
+				default: 0,
+				displayOptions: {
+					show: {
+						resource: ['model'],
+						operation: ['describeModelVersions'],
+					},
+				},
+				description: '分页大小，没传默认返回全部（设置为0表示返回全部）',
 			},
 			// 开发实例查询参数
 			{
@@ -671,12 +805,27 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['devInstance'],
+						operation: ['describeDevInstances'],
 					},
 				},
 				description: 'Whether to show only the current user\'s development instances',
 			},
 			{
-				displayName: '资源池ID（开发实例）',
+				displayName: '开发机 ID',
+				name: 'devInstanceId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['devInstance'],
+						operation: ['describeDevInstance'],
+					},
+				},
+				description: '要查询的开发机ID',
+			},
+			{
+				displayName: '资源池ID',
 				name: 'devResourcePoolId',
 				type: 'string',
 				default: '',
@@ -684,6 +833,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['devInstance'],
+						operation: ['describeDevInstances'],
 					},
 				},
 				description: '资源池ID 过滤。如果未填写，将使用凭证中设置的默认资源池ID',
@@ -697,6 +847,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['devInstance'],
+						operation: ['describeDevInstances'],
 					},
 				},
 				description: '队列名称过滤。如果未填写，将使用凭证中设置的默认队列',
@@ -709,6 +860,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['devInstance'],
+						operation: ['describeDevInstances'],
 					},
 				},
 				description: '状态过滤',
@@ -723,6 +875,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['queue'],
+						operation: ['describeQueues'],
 					},
 				},
 				description: '资源池ID。如果未填写，将使用凭证中设置的默认资源池ID',
@@ -739,6 +892,7 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['queue'],
+						operation: ['describeQueues'],
 					},
 				},
 				description: '关键词搜索类型',
@@ -751,9 +905,55 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['queue'],
+						operation: ['describeQueues'],
 					},
 				},
 				description: '搜索关键词',
+			},
+			{
+				displayName: '队列 ID',
+				name: 'queueId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['queue'],
+						operation: ['describeQueue'],
+					},
+				},
+				description: '要查询的队列ID',
+			},
+			// 资源池查询参数
+			{
+				displayName: '资源池类型',
+				name: 'resourcePoolType',
+				type: 'options',
+				options: [
+					{ name: '通用资源池', value: 'common' },
+					{ name: '托管资源池', value: 'dedicatedV2' },
+				],
+				default: 'common',
+				displayOptions: {
+					show: {
+						resource: ['resourcePool'],
+						operation: ['describeResourcePools'],
+					},
+				},
+			},
+			{
+				displayName: '资源池 ID',
+				name: 'resourcePoolDetailId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['resourcePool'],
+						operation: ['describeResourcePool'],
+					},
+				},
+				description: '要查询的资源池ID',
 			},
 			// 服务查询参数
 			{
@@ -779,8 +979,24 @@ export class Aihc implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['service'],
+						operation: ['describeServices'],
 					},
 				},
+				description: '排序方式',
+			},
+			{
+				displayName: '服务 ID',
+				name: 'serviceId',
+				type: 'string',
+				default: '',
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['service'],
+						operation: ['describeService'],
+					},
+				},
+				description: '要查询的服务ID',
 			},
 		],
 	};
@@ -831,9 +1047,26 @@ export class Aihc implements INodeType {
 				if (operation === 'describeResourcePools') {
 					// 查询资源池列表操作
 					action = 'DescribeResourcePools';
+					const resourcePoolType = this.getNodeParameter('resourcePoolType', itemIndex, 'common') as string;
 					queryParams = {
 						action,
-						resourcePoolType:'common'
+						resourcePoolType,
+					};
+					httpMethod = 'GET';
+				} else if (operation === 'describeResourcePool') {
+					// 查询资源池详情操作
+					const resourcePoolId = this.getNodeParameter('resourcePoolDetailId', itemIndex, '') as string;
+
+					if (!resourcePoolId) {
+						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeResourcePool';
+					queryParams = {
+						action,
+						resourcePoolId,
 					};
 					httpMethod = 'GET';
 				} else if (operation === 'describeJobs') {
@@ -997,6 +1230,47 @@ export class Aihc implements INodeType {
 					if (importFormat) queryParams['importFormat'] = importFormat;
 
 					httpMethod = 'GET';
+				} else if (operation === 'describeDataset') {
+					// 获取数据集详情操作
+					const datasetId = this.getNodeParameter('datasetId', itemIndex, '') as string;
+
+					if (!datasetId) {
+						throw new NodeOperationError(this.getNode(), '数据集ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeDataset';
+					queryParams = {
+						action,
+						datasetId,
+					};
+					httpMethod = 'GET';
+				} else if (operation === 'describeDatasetVersions') {
+					// 获取数据集版本列表操作
+					const datasetId = this.getNodeParameter('datasetId', itemIndex, '') as string;
+					const pageNumber = this.getNodeParameter('datasetVersionPageNumber', itemIndex, 1) as number;
+					const pageSize = this.getNodeParameter('datasetVersionPageSize', itemIndex, 0) as number;
+
+					if (!datasetId) {
+						throw new NodeOperationError(this.getNode(), '数据集ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeDatasetVersions';
+					queryParams = {
+						action,
+						datasetId,
+						pageNumber: pageNumber.toString(),
+					};
+
+					// pageSize 为 0 表示返回全部，不传该参数
+					if (pageSize > 0) {
+						queryParams.pageSize = pageSize.toString();
+					}
+
+					httpMethod = 'GET';
 				} else if (operation === 'describeModels') {
 					// 查询模型列表操作
 					action = 'DescribeModels';
@@ -1009,6 +1283,47 @@ export class Aihc implements INodeType {
 					};
 
 					if (keyword) queryParams['keyword'] = keyword;
+
+					httpMethod = 'GET';
+				} else if (operation === 'describeModel') {
+					// 获取模型详情操作
+					const modelId = this.getNodeParameter('modelId', itemIndex, '') as string;
+
+					if (!modelId) {
+						throw new NodeOperationError(this.getNode(), '模型ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeModel';
+					queryParams = {
+						action,
+						modelId,
+					};
+					httpMethod = 'GET';
+				} else if (operation === 'describeModelVersions') {
+					// 获取模型版本列表操作
+					const modelId = this.getNodeParameter('modelId', itemIndex, '') as string;
+					const pageNumber = this.getNodeParameter('modelVersionPageNumber', itemIndex, 1) as number;
+					const pageSize = this.getNodeParameter('modelVersionPageSize', itemIndex, 0) as number;
+
+					if (!modelId) {
+						throw new NodeOperationError(this.getNode(), '模型ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeModelVersions';
+					queryParams = {
+						action,
+						modelId,
+						pageNumber: pageNumber.toString(),
+					};
+
+					// pageSize 为 0 表示返回全部，不传该参数
+					if (pageSize > 0) {
+						queryParams.pageSize = pageSize.toString();
+					}
 
 					httpMethod = 'GET';
 				} else if (operation === 'describeDevInstances') {
@@ -1041,6 +1356,22 @@ export class Aihc implements INodeType {
 					if (devStatus) queryParams['status'] = devStatus;
 
 					httpMethod = 'GET';
+				} else if (operation === 'describeDevInstance') {
+					// 查询开发机详情操作
+					const devInstanceId = this.getNodeParameter('devInstanceId', itemIndex, '') as string;
+
+					if (!devInstanceId) {
+						throw new NodeOperationError(this.getNode(), '开发机ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeDevInstance';
+					queryParams = {
+						action,
+						devInstanceId,
+					};
+					httpMethod = 'GET';
 				} else if (operation === 'describeServices') {
 					// 查询服务列表操作
 					action = 'DescribeServices';
@@ -1057,6 +1388,22 @@ export class Aihc implements INodeType {
 						order: serviceOrder,
 					};
 
+					httpMethod = 'GET';
+				} else if (operation === 'describeService') {
+					// 查询服务详情操作
+					const serviceId = this.getNodeParameter('serviceId', itemIndex, '') as string;
+
+					if (!serviceId) {
+						throw new NodeOperationError(this.getNode(), '服务ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeService';
+					queryParams = {
+						action,
+						serviceId,
+					};
 					httpMethod = 'GET';
 				} else if (operation === 'describeQueues') {
 					// 查询队列列表操作
@@ -1088,6 +1435,22 @@ export class Aihc implements INodeType {
 					if (pageNumber) queryParams['pageNumber'] = pageNumber.toString();
 					if (pageSize) queryParams['pageSize'] = pageSize.toString();
 
+					httpMethod = 'GET';
+				} else if (operation === 'describeQueue') {
+					// 查询队列详情操作
+					const queueId = this.getNodeParameter('queueId', itemIndex, '') as string;
+
+					if (!queueId) {
+						throw new NodeOperationError(this.getNode(), '队列ID 不能为空', {
+							itemIndex,
+						});
+					}
+
+					action = 'DescribeQueue';
+					queryParams = {
+						action,
+						queueId,
+					};
 					httpMethod = 'GET';
 				} else if (operation === 'callApi') {
 					// 通用 API 调用操作
