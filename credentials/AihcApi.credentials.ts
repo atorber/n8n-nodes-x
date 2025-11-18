@@ -68,6 +68,15 @@ export class AihcApi implements ICredentialType {
 			placeholder: '输入 PFS 实例 ID',
 			description: '默认 PFS 实例 ID，在创建任务时如果需要使用数据源且未指定 PFS 实例ID，则使用此值',
 		},
+		{
+			displayName: '源路径',
+			name: 'sourcePath',
+			type: 'string',
+			default: '',
+			required: false,
+			placeholder: '输入源路径',
+			description: '源路径配置，用于指定数据源或资源的路径',
+		},
 	];
 
 	// 注意：百度云的签名认证需要在节点代码中手动实现
