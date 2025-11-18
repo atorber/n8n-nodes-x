@@ -1974,6 +1974,30 @@ export class Aihc implements INodeType {
 		const items = this.getInputData();
 		const returnData: INodeExecutionData[] = [];
 
+		// 统一获取资源池ID的辅助函数
+		const getResourcePoolId = (
+			paramName: string,
+			itemIndex: number,
+			defaultResourcePoolId: string,
+			required: boolean = true,
+		): string => {
+			let resourcePoolId = this.getNodeParameter(paramName, itemIndex, '') as string;
+
+			// 如果节点参数未填写，使用凭证中的默认值
+			if (!resourcePoolId && defaultResourcePoolId) {
+				resourcePoolId = defaultResourcePoolId;
+			}
+
+			// 如果需要且仍为空，抛出错误
+			if (required && !resourcePoolId) {
+				throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
+					itemIndex,
+				});
+			}
+
+			return resourcePoolId;
+		};
+
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
 				const operation = this.getNodeParameter('operation', itemIndex, '') as string;
@@ -2024,13 +2048,7 @@ export class Aihc implements INodeType {
 					httpMethod = 'GET';
 				} else if (operation === 'describeResourcePool') {
 					// 查询资源池详情操作
-					const resourcePoolId = this.getNodeParameter('resourcePoolDetailId', itemIndex, '') as string;
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-							itemIndex,
-						});
-					}
+					const resourcePoolId = getResourcePoolId('resourcePoolDetailId', itemIndex, defaultResourcePoolId);
 
 					action = 'DescribeResourcePool';
 					queryParams = {
@@ -2040,13 +2058,7 @@ export class Aihc implements INodeType {
 					httpMethod = 'GET';
 				} else if (operation === 'describeResourcePoolConfiguration') {
 					// 查询资源池配置操作
-					const resourcePoolId = this.getNodeParameter('resourcePoolConfigurationId', itemIndex, '') as string;
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-							itemIndex,
-						});
-					}
+					const resourcePoolId = getResourcePoolId('resourcePoolConfigurationId', itemIndex, defaultResourcePoolId);
 
 					action = 'DescribeResourcePoolConfiguration';
 					queryParams = {
@@ -2058,17 +2070,7 @@ export class Aihc implements INodeType {
 				} else if (operation === 'describeJobs') {
 					// 查询训练任务列表操作
 					// 根据参考脚本，DescribeJobs 需要将部分参数放在 body 中
-					let resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-							itemIndex,
-						});
-					}
+					const resourcePoolId = getResourcePoolId('resourcePoolId', itemIndex, defaultResourcePoolId);
 
 					action = 'DescribeJobs';
 					// queryParams 只包含 action 和 resourcePoolId
@@ -2082,21 +2084,10 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'createJob') {
 					// 创建训练任务操作
-					let resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('resourcePoolId', itemIndex, defaultResourcePoolId);
 					let queueID = this.getNodeParameter('queueID', itemIndex, '') as string;
 					let queueName = this.getNodeParameter('queueName', itemIndex, '') as string;
 					const requestBodyStr = this.getNodeParameter('requestBody', itemIndex, '{}') as string;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-								itemIndex,
-						});
-					}
 
 					// 解析请求体
 					let bodyData: IDataObject = {};
@@ -2155,19 +2146,8 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'stopJob') {
 					// 停止训练任务操作
-					let resourcePoolId = this.getNodeParameter('stopJobResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('stopJobResourcePoolId', itemIndex, defaultResourcePoolId);
 					const jobId = this.getNodeParameter('stopJobId', itemIndex, '') as string;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-								itemIndex,
-							});
-						}
 
 					if (!jobId) {
 						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
@@ -2187,22 +2167,11 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'describeJobWebterminal') {
 					// 获取训练任务WebTerminal地址操作
-					let resourcePoolId = this.getNodeParameter('webterminalResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('webterminalResourcePoolId', itemIndex, defaultResourcePoolId);
 					const jobId = this.getNodeParameter('webterminalJobId', itemIndex, '') as string;
 					const podName = this.getNodeParameter('podName', itemIndex, '') as string;
 					const handshakeTimeoutSecond = this.getNodeParameter('handshakeTimeoutSecond', itemIndex, 30) as number;
 					const pingTimeoutSecond = this.getNodeParameter('pingTimeoutSecond', itemIndex, 900) as number;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-								itemIndex,
-							});
-						}
 
 					if (!jobId) {
 						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
@@ -2239,21 +2208,10 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'describeJobEvents') {
 					// 查询训练任务事件操作
-					let resourcePoolId = this.getNodeParameter('eventsResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('eventsResourcePoolId', itemIndex, defaultResourcePoolId);
 					const jobId = this.getNodeParameter('eventsJobId', itemIndex, '') as string;
 					const startTime = this.getNodeParameter('startTime', itemIndex, '') as string;
 					const endTime = this.getNodeParameter('endTime', itemIndex, '') as string;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-								itemIndex,
-							});
-						}
 
 					if (!jobId) {
 						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
@@ -2283,7 +2241,7 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'describeJobLogs') {
 					// 查询训练任务日志操作
-					let resourcePoolId = this.getNodeParameter('logsResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('logsResourcePoolId', itemIndex, defaultResourcePoolId);
 					const jobId = this.getNodeParameter('logsJobId', itemIndex, '') as string;
 					const podName = this.getNodeParameter('logsPodName', itemIndex, '') as string;
 					const keywords = this.getNodeParameter('keywords', itemIndex, '') as string;
@@ -2292,17 +2250,6 @@ export class Aihc implements INodeType {
 					const maxLines = this.getNodeParameter('maxLines', itemIndex, '') as number;
 					const chunkSize = this.getNodeParameter('chunkSize', itemIndex, 1) as number;
 					const marker = this.getNodeParameter('marker', itemIndex, '') as string;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-									itemIndex,
-						});
-					}
 
 					if (!jobId) {
 						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
@@ -2351,19 +2298,8 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'deleteJob') {
 					// 删除训练任务操作
-					let resourcePoolId = this.getNodeParameter('deleteJobResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('deleteJobResourcePoolId', itemIndex, defaultResourcePoolId);
 					const jobId = this.getNodeParameter('deleteJobId', itemIndex, '') as string;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-							itemIndex,
-						});
-					}
 
 					if (!jobId) {
 						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
@@ -2383,21 +2319,10 @@ export class Aihc implements INodeType {
 					httpMethod = 'POST';
 				} else if (operation === 'describeJob') {
 					// 查询训练任务详情操作
-					let resourcePoolId = this.getNodeParameter('resourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('resourcePoolId', itemIndex, defaultResourcePoolId);
 					const queueID = this.getNodeParameter('queueID', itemIndex, '') as string;
 					const jobId = this.getNodeParameter('jobId', itemIndex, '') as string;
 					const needDetail = this.getNodeParameter('needDetail', itemIndex, false) as boolean;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-								itemIndex,
-							});
-						}
 
 					if (!jobId) {
 						throw new NodeOperationError(this.getNode(), '任务ID 不能为空', {
@@ -2726,14 +2651,11 @@ export class Aihc implements INodeType {
 					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
 					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
 					const onlyMyDevs = this.getNodeParameter('onlyMyDevs', itemIndex, false) as boolean;
-					let devResourcePoolId = this.getNodeParameter('devResourcePoolId', itemIndex, '') as string;
 					let devQueueName = this.getNodeParameter('devQueueName', itemIndex, '') as string;
 					const devStatus = this.getNodeParameter('devStatus', itemIndex, '') as string;
 
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!devResourcePoolId && defaultResourcePoolId) {
-						devResourcePoolId = defaultResourcePoolId;
-					}
+					// 如果节点参数未填写，使用凭证中的默认值（查询列表时资源池ID是可选的）
+					const devResourcePoolId = getResourcePoolId('devResourcePoolId', itemIndex, defaultResourcePoolId, false);
 					if (!devQueueName && defaultQueue) {
 						devQueueName = defaultQueue;
 					}
@@ -2768,23 +2690,12 @@ export class Aihc implements INodeType {
 					httpMethod = 'GET';
 				} else if (operation === 'createDevInstance') {
 					// 创建开发机操作
-					let resourcePoolId = this.getNodeParameter('devInstanceResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('devInstanceResourcePoolId', itemIndex, defaultResourcePoolId);
 					let queueName = this.getNodeParameter('devInstanceQueueName', itemIndex, '') as string;
 					const requestBodyStr = this.getNodeParameter('devInstanceRequestBody', itemIndex, '{}') as string;
 
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
 					if (!queueName && defaultQueue) {
 						queueName = defaultQueue;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-							itemIndex,
-						});
 					}
 
 					// 解析请求体
@@ -2889,24 +2800,13 @@ export class Aihc implements INodeType {
 					httpMethod = 'GET';
 				} else if (operation === 'createService') {
 					// 创建服务操作
-					let resourcePoolId = this.getNodeParameter('serviceResourcePoolId', itemIndex, '') as string;
+					const resourcePoolId = getResourcePoolId('serviceResourcePoolId', itemIndex, defaultResourcePoolId);
 					let queueName = this.getNodeParameter('serviceQueueName', itemIndex, '') as string;
 					const requestBodyStr = this.getNodeParameter('serviceRequestBody', itemIndex, '{}') as string;
 					const clientToken = this.getNodeParameter('serviceClientToken', itemIndex, '') as string;
 
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!resourcePoolId && defaultResourcePoolId) {
-						resourcePoolId = defaultResourcePoolId;
-					}
-
 					if (!queueName && defaultQueue) {
 						queueName = defaultQueue;
-					}
-
-					if (!resourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-							itemIndex,
-						});
 					}
 
 					// 解析请求体
@@ -2964,22 +2864,11 @@ export class Aihc implements INodeType {
 				} else if (operation === 'describeQueues') {
 					// 查询队列列表操作
 					action = 'DescribeQueues';
-					let queueResourcePoolId = this.getNodeParameter('queueResourcePoolId', itemIndex, '') as string;
+					const queueResourcePoolId = getResourcePoolId('queueResourcePoolId', itemIndex, defaultResourcePoolId);
 					const pageNumber = this.getNodeParameter('pageNumber', itemIndex, 1) as number;
 					const pageSize = this.getNodeParameter('pageSize', itemIndex, 10) as number;
 					const queueKeywordType = this.getNodeParameter('queueKeywordType', itemIndex, '') as string;
 					const queueKeyword = this.getNodeParameter('queueKeyword', itemIndex, '') as string;
-
-					// 如果节点参数未填写，使用凭证中的默认值
-					if (!queueResourcePoolId && defaultResourcePoolId) {
-						queueResourcePoolId = defaultResourcePoolId;
-					}
-
-					if (!queueResourcePoolId) {
-						throw new NodeOperationError(this.getNode(), '资源池ID 不能为空', {
-								itemIndex,
-							});
-						}
 
 					queryParams = {
 						action,

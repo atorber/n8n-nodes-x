@@ -40,7 +40,19 @@
 			"label": "build, link and prepare n8n",
 			"type": "shell",
 			"command": "npm run build && npm link && cd ~/.n8n/custom && npm link @atorber/n8n-nodes-x",
-			"problemMatcher": []
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared",
+				"focus": false,
+				"echo": true,
+				"clear": false,
+				"showReuseMessage": false,
+				"close": false
+			},
+			"runOptions": {
+				"reevaluateOnRerun": false
+			}
 		},
 		{
 			"label": "build, link and start n8n",
