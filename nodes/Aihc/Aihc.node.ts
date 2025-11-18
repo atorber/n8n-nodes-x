@@ -15,9 +15,8 @@ import type {
 import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 
 // 动态导入 SDK 以避免 lint 错误
-// @ts-expect-error - @atorber/baiducloud-sdk is a CommonJS module
-// eslint-disable-next-line @typescript-eslint/no-require-imports, @n8n/community-nodes/no-restricted-imports
-const { BceBaseClient } = require('@atorber/baiducloud-sdk');
+// eslint-disable-next-line @n8n/community-nodes/no-restricted-imports
+import { BceBaseClient, HttpMethod } from '@atorber/baiducloud-sdk';
 
 /**
  * 判断是否为 Job 相关接口
@@ -2990,7 +2989,7 @@ export class Aihc implements INodeType {
 						body: requestBody || null,
 					});
 				} else {
-					response = await client.sendRequest(httpMethod, '/', {
+					response = await client.sendRequest(httpMethod as HttpMethod, '/', {
 						params: queryParams,
 						config: {},
 						headers,
