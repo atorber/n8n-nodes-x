@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 40 40">
+  <defs>
+    <linearGradient id="iotGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="40" height="40" rx="8" fill="url(#iotGradient)"/>
+  <circle cx="20" cy="15" r="4" fill="white" opacity="0.9"/>
+  <path d="M 12 25 L 20 20 L 28 25 L 28 30 L 12 30 Z" fill="white" opacity="0.9"/>
+  <circle cx="16" cy="27" r="1.5" fill="#357ABD"/>
+  <circle cx="20" cy="27" r="1.5" fill="#357ABD"/>
+  <circle cx="24" cy="27" r="1.5" fill="#357ABD"/>
+</svg>
+

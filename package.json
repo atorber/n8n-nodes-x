@@ -35,14 +35,16 @@
 			"dist/credentials/GithubIssuesOAuth2Api.credentials.js",
 			"dist/credentials/ICafeApi.credentials.js",
 			"dist/credentials/AihcApi.credentials.js",
-			"dist/credentials/ZhiBanApi.credentials.js"
+			"dist/credentials/ZhiBanApi.credentials.js",
+			"dist/credentials/IoTCoreApi.credentials.js"
 		],
 		"nodes": [
 			"dist/nodes/GithubIssues/GithubIssues.node.js",
 			"dist/nodes/Example/Example.node.js",
 			"dist/nodes/iCafe/iCafe.node.js",
 			"dist/nodes/Aihc/Aihc.node.js",
-			"dist/nodes/ZhiBan/ZhiBan.node.js"
+			"dist/nodes/ZhiBan/ZhiBan.node.js",
+			"dist/nodes/IoTCore/IoTCore.node.js"
 		]
 	},
 	"dependencies": {
