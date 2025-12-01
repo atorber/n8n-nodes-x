@@ -44,11 +44,13 @@
 			"dist/nodes/iCafe/iCafe.node.js",
 			"dist/nodes/Aihc/Aihc.node.js",
 			"dist/nodes/ZhiBan/ZhiBan.node.js",
-			"dist/nodes/IoTCore/IoTCore.node.js"
+			"dist/nodes/IoTCore/IoTCore.node.js",
+			"dist/nodes/IoTCoreTrigger/IoTCoreTrigger.node.js"
 		]
 	},
 	"dependencies": {
-		"@atorber/baiducloud-sdk": "^1.0.3-beta.7"
+		"@atorber/baiducloud-sdk": "^1.0.3-beta.7",
+		"mqtt": "^5.10.0"
 	},
 	"devDependencies": {
 		"@n8n/node-cli": "^0.15.0",

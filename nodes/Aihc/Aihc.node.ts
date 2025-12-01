@@ -2913,8 +2913,7 @@ export class Aihc implements INodeType {
 					// 如果用户输入了完整 URL（包含域名），提取路径部分
 					// 域名应该从凭证中的 baseURL 获取
 					if (apiPath.startsWith('http://') || apiPath.startsWith('https://')) {
-						try {
-							// @ts-expect-error - URL is a Node.js built-in global
+							try {
 							const url = new URL(apiPath);
 							apiPath = url.pathname + url.search;
 						} catch {

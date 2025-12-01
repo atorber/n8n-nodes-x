@@ -268,10 +268,9 @@ export class Data implements INodeType {
 
 					// 解析URL，去掉https://，得到路径
 					let repoId = '';
-					let savePath = '';
-					try {
-						// @ts-expect-error - URL is a Node.js built-in global
-						const url = new URL(hfUrl);
+				let savePath = '';
+				try {
+					const url = new URL(hfUrl);
 						const pathname = url.pathname;
 						// 去掉开头的斜杠，得到repo_id
 						repoId = pathname.startsWith('/') ? pathname.substring(1) : pathname;
@@ -351,10 +350,9 @@ export class Data implements INodeType {
 
 					// 解析URL，去掉https://，得到路径
 					let repoId = '';
-					let savePath = '';
-					try {
-						// @ts-expect-error - URL is a Node.js built-in global
-						const url = new URL(hfUrl);
+				let savePath = '';
+				try {
+					const url = new URL(hfUrl);
 						const pathname = url.pathname;
 						// 去掉开头的斜杠，得到repo_id
 						repoId = pathname.startsWith('/') ? pathname.substring(1) : pathname;

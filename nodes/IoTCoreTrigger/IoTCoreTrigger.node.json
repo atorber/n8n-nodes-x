@@ -1,0 +1,19 @@
+{
+	"node": "n8n-nodes-ioTCoreTrigger",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Development", "Developer Tools"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://cloud.baidu.com/doc/IOT/s/4k8vqjq8x"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://cloud.baidu.com/doc/IOT/s/4k8vqjq8x"
+			}
+		]
+	}
+}
+
